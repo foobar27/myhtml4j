@@ -1,0 +1,3 @@
+[submodule "cpp/vendor/myhtml"]
+	path = cpp/vendor/myhtml
+	url = https://github.com/lexborisov/myhtml.git
