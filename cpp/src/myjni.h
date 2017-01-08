@@ -116,6 +116,9 @@ struct JObject {
     jobject id() const {
         return m_id;
     }
+    JObject(jobject id)
+        : m_id(id)
+    {}
 private:
     jobject m_id;
 };
@@ -156,6 +159,18 @@ struct JClass {
 
     JClass(jclass id);
     jclass id() const;
+
+    static JClass load(JNIEnv* env, const char * name) {
+        auto id = env->FindClass(name);
+        if (!id) {
+            throw 0; // TODO
+        }
+        return {id};
+    }
+
+    JClass globalRef(JNIEnv* env) {
+        return { (jclass) env->NewGlobalRef(m_id) };
+    }
 
     template<class ReturnType>
     JMethod<ReturnType> getMethod(JNIEnv *env, const std::string & name, const std::string & signature) {
