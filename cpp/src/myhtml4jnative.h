@@ -2,8 +2,28 @@
 
 #include "jni.h"
 
-jlong newContext(JNIEnv *env, jclass callbackClass);
-void deleteContext(JNIEnv *env, jlong context);
+/*
+ * Class:     com_github_foobar27_myhtml4j_Native
+ * Method:    newContext
+ * Signature: (Ljava/lang/Class;)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_foobar27_myhtml4j_Native_newContext
+  (JNIEnv *, jclass, jclass);
 
-// TODO parse flags
-void parseUTF8(JNIEnv *env, jlong context, jstring s, jobject callback);
+/*
+ * Class:     com_github_foobar27_myhtml4j_Native
+ * Method:    deleteContext
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_github_foobar27_myhtml4j_Native_deleteContext
+  (JNIEnv *, jclass, jlong);
+
+
+/*
+ * Class:     com_github_foobar27_myhtml4j_Native
+ * Method:    parseUTF8
+ * Signature: (JLjava/lang/String;Lcom/github/foobar27/myhtml4j/Native/NativeCallBack;)V
+ */
+JNIEXPORT void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8
+  (JNIEnv *, jclass, jlong, jstring, jobject);
+

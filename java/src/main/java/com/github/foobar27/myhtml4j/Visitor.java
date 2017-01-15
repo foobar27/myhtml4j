@@ -13,6 +13,6 @@ public interface Visitor {
 
     void createComment(String text);
 
-    void createElement(Namespace ns, Tag tag, List<Parser.Attribute> attributes);
+    void createElement(Namespace ns, Tag tag, List<Attribute> attributes);
 
 }

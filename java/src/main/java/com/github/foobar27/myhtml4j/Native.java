@@ -4,6 +4,10 @@ import com.github.foobar27.myhtml4j.atoms.AttributeKey;
 import com.github.foobar27.myhtml4j.atoms.Namespace;
 import com.github.foobar27.myhtml4j.atoms.Tag;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 class Native {
 
     private static final String JNI_LIBRARY_NAME = "myhtml4j";
@@ -32,10 +36,10 @@ class Native {
 
     static final class NativeCallBack {
 
-        private final Parser.CallBack delegate;
+        private final Visitor delegate;
         boolean internalErrorOccurred;
 
-        NativeCallBack(Parser.CallBack delegate) {
+        NativeCallBack(Visitor delegate) {
             if (delegate == null) {
                 throw new NullPointerException("Delegate must not be null!");
             }
@@ -59,48 +63,21 @@ class Native {
         }
 
         void createElement(int nsId, String nsString, int tagId, String tagString, int[] ids, String[] strings) {
-            Parser.Attribute[] attributes;
+            List<Attribute> attributes;
             if (ids == null) {
-                attributes = new Parser.Attribute[]{};
+                attributes = Collections.emptyList();
             } else {
-                attributes = new Parser.Attribute[ids.length];
-            }
-            int stringsId = 0;
-            for (int i=0; i<ids.length; i =+ 2, stringsId += 2) {
-                Namespace ns = Namespace.get(ids[i], null);
-                AttributeKey key = AttributeKey.get(ids[i+1], strings[stringsId]);
-                String value = strings[stringsId + 1];
-                attributes[i] = new Parser.Attribute(ns, key, value);
+                attributes = new ArrayList<>(ids.length);
+                int stringsId = 0;
+                for (int i=0; i<ids.length; i =+ 2, stringsId += 2) {
+                    Namespace ns = Namespace.get(ids[i], null);
+                    AttributeKey key = AttributeKey.get(ids[i+1], strings[stringsId]);
+                    String value = strings[stringsId + 1];
+                    attributes.add(new Attribute(ns, key, value));
+                }
             }
             delegate.createElement(Namespace.get(nsId, nsString), Tag.get(tagId, tagString), attributes);
         }
     }
-
-//    static native void parse(long contextPointer,
-//                             String inputHtml,
-//                             long parseOptions,
-//                             Parser.CallBack callback);
-//
-//    void parse(String inputHtml,
-//               ParseOptions parseOptions,
-//               Parser.CallBack callback) {
-//        parse(contextPointer, inputHtml, parseOptions.getNativeStruct().pointer, callback);
-//    }
-//
-//    long createTokenizerOptions(TokenizerOptions options) {
-//        return createTokenizerOptions(contextPointer, options);
-//    }
-//
-//    long createTreeBuilderOptions(TreeBuilderOptions options) {
-//        return createTreeBuilderOptions(contextPointer, options);
-//    }
-//
-//    long createParseOptions(ParseOptions options) {
-//        return createParseOptions(contextPointer, options);
-//    }
-//
-//    long createSerializeOptions(SerializeOptions options) {
-//        return createSerializeOptions(contextPointer, options);
-//    }
 
 }

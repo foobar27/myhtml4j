@@ -111,7 +111,7 @@ struct Context {
 
 };
 
-jlong newContext(JNIEnv *env, jclass callbackClass) {
+jlong JNICALL Java_com_github_foobar27_myhtml4j_Native_newContext(JNIEnv *env, jclass, jclass callbackClass) {
     auto myhtml = myhtml_create();
     if (!myhtml) {
         std::cerr << "myhtml_create failed" << std::endl;
@@ -126,7 +126,7 @@ jlong newContext(JNIEnv *env, jclass callbackClass) {
     return (jlong) new Context(env, callbackClass, myhtml);
 }
 
-void deleteContext(JNIEnv *env, jlong context) {
+void JNICALL Java_com_github_foobar27_myhtml4j_Native_deleteContext(JNIEnv *env, jclass, jlong context) {
     delete (Context*) context;
 }
 
@@ -150,7 +150,6 @@ JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root)
     std::vector<uint32_t> ids;
     std::vector<jstring> strings;
     while (attr) {
-        // TODO not in sync with java code!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         auto aNs = myhtml_attribute_namespace(attr);
         auto aKey = wc.attributeKeyCache.get(myhtml_attribute_key(attr, nullptr));
         auto aValue = wc.env->NewStringUTF(myhtml_attribute_value(attr, nullptr));
@@ -228,8 +227,7 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
 
 }
 
-
-void parseUTF8(JNIEnv *env, jlong c, jstring i, jobject callback) {
+void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jclass, jlong c, jstring i, jobject callback) {
     Context* context = (Context*) c;
     JavaCallbackObject cb(env, context->m_callbackClass, JObject(callback));
     const char *input = env->GetStringUTFChars(i, nullptr);
