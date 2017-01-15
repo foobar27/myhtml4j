@@ -3,7 +3,7 @@
 %define class-name AttributeKeyLookup
 %readonly-tables
 %ignore-case
-struct AttributeKeyId { char *name; uint32_t id; };
+struct AttributeKeyId { char *name; int32_t id; };
 %%
 accept,0
 accept-charset,1

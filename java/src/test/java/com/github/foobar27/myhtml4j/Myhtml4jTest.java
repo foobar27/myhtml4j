@@ -26,7 +26,7 @@ public class Myhtml4jTest {
         // This tests twice the same attribute.
         // The second time should be a caches jstring (which we don't test here).
         Node root = Myhtml4j.getInstance().parseUTF8("<div foo=\"bar\">Text</div><div foo=\"baz\">", NodeSink::new);
-        assertEquals("bar",
+        assertEquals("<html><head></head><body><div foo=\"bar\">Text</div><div foo=\"baz\"></div></body></html>",
                 root.toHtml());
     }
 

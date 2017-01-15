@@ -6,7 +6,7 @@
 #include "myjni.h"
 #include <cstring>
 
-uint32_t attribute_key_to_id(const char* s, unsigned int len) {
+int32_t attribute_key_to_id(const char* s, unsigned int len) {
     auto result = AttributeKeyLookup::in_word_set(s, len);
     if (result) {
         return result->id;

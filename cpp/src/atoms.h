@@ -6,7 +6,7 @@
 #include <jni.h>
 
 struct AttributeKey {
-    uint32_t id;
+    int32_t id;
     jstring name;
 };
 
