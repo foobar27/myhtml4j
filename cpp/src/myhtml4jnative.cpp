@@ -2,8 +2,7 @@
 
 #include "myhtml4jnative.h"
 #include "myjni.h"
-
-#include "unordered_set"
+#include "atoms.h"
 
 #include <iostream>
 #include <string>
@@ -53,7 +52,7 @@ public:
         , m_preOrderVisit(c.getMethod<void>(env, "preOrderVisit", "()V"))
         , m_createText(c.getMethod<void>(env, "createText", "(Ljava/lang/String;)V"))
         , m_createComment(c.getMethod<void>(env, "createComment", "(Ljava/lang/String;)V"))
-        , m_createNormalElement(c.getMethod<void>(env, "createNormalElement", "(ILjava/lang/String;ILjava/lang/String;[I[Ljava/lang/String;)V"))
+        , m_createElement(c.getMethod<void>(env, "createElement", "(ILjava/lang/String;ILjava/lang/String;[I[Ljava/lang/String;)V"))
     {}
 
 private:
@@ -62,7 +61,7 @@ private:
     JMethod<void> m_preOrderVisit;
     JMethod<void> m_createText;
     JMethod<void> m_createComment;
-    JMethod<void> m_createNormalElement;
+    JMethod<void> m_createElement;
 };
 
 class JavaCallbackObject {
@@ -90,7 +89,7 @@ public:
     }
 
     void createElement(const JNamespace & ns, const JTag & tag, jintArray ids, jobjectArray strings) {
-        m_class.m_createNormalElement(m_env, m_object, ns.id(), ns.string(), tag.id(), tag.string(), ids, strings);
+        m_class.m_createElement(m_env, m_object, ns.id(), ns.string(), tag.id(), tag.string(), ids, strings);
     }
 
 private:
@@ -136,7 +135,14 @@ struct JniNodeAttributes {
     jobjectArray strings;
 };
 
-JniNodeAttributes flatten_attributes(JNIEnv* env, jclass stringClass, myhtml_tree_node_t* root) {
+struct WalkContext {
+    JNIEnv * env;
+    JClass stringClass;
+    JavaCallbackObject & cb;
+    AttributeKeyCache attributeKeyCache;
+};
+
+JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root) {
     myhtml_tree_attr_t* attr = myhtml_node_attribute_first(root);
     if (!attr) {
         return {nullptr, nullptr};
@@ -144,48 +150,47 @@ JniNodeAttributes flatten_attributes(JNIEnv* env, jclass stringClass, myhtml_tre
     std::vector<uint32_t> ids;
     std::vector<jstring> strings;
     while (attr) {
+        // TODO not in sync with java code!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         auto aNs = myhtml_attribute_namespace(attr);
-        auto aKey = env->NewStringUTF(myhtml_attribute_key(attr, nullptr)); // TODO cache
-        auto aValue = env->NewStringUTF(myhtml_attribute_value(attr, nullptr));
+        auto aKey = wc.attributeKeyCache.get(myhtml_attribute_key(attr, nullptr));
+        auto aValue = wc.env->NewStringUTF(myhtml_attribute_value(attr, nullptr));
 
         ids.push_back(aNs);
-        strings.push_back(aKey);
+        ids.push_back(aKey.id);
+        strings.push_back(aKey.name);
         strings.push_back(aValue);
 
         attr = myhtml_attribute_next(attr);
     }
 
     // Convert ids vector to JNI array
-    auto idArray = env->NewIntArray(ids.size());
+    auto idArray = wc.env->NewIntArray(ids.size());
     {
         if (!idArray) {
             throw 0; // TODO
         }
-        env->SetIntArrayRegion(idArray, 0, ids.size(), (jint*) ids.data());
+        wc.env->SetIntArrayRegion(idArray, 0, ids.size(), (jint*) ids.data());
     }
 
     // Convert strings vector to JNI array
-    auto stringArray = env->NewObjectArray(strings.size(), stringClass, nullptr);
+    auto stringArray = wc.env->NewObjectArray(strings.size(), wc.stringClass.id(), nullptr);
     {
         if (!stringArray) {
             throw 0; // TODO
         }
         for (int i=0; i<strings.size(); ++i) {
-            env->SetObjectArrayElement(stringArray, i, strings[i]);
+            auto string = strings[i];
+            if (string) {
+                wc.env->SetObjectArrayElement(stringArray, i, string);
+            } // else take pre-initialized value of null
         }
     }
 
     return {idArray, stringArray};
 }
 
-struct WalkContext {
-    JNIEnv * env;
-    JClass stringClass;
-    JavaCallbackObject & cb;
-};
-
 // TODO what happens on StackOverflow?
-void transferSubTree(WalkContext & context, myhtml_tree_node_t* root) {
+void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
     if (!root) {
         return;
     }
@@ -197,29 +202,29 @@ void transferSubTree(WalkContext & context, myhtml_tree_node_t* root) {
      case MyHTML_TAG__UNDEF:
          return;
      case MyHTML_TAG__TEXT:
-         context.cb.createText(myhtml_node_text(root, nullptr));
+         wc.cb.createText(myhtml_node_text(root, nullptr));
          return;
      case MyHTML_TAG__COMMENT:
-         context.cb.createComment(myhtml_node_text(root, nullptr));
+         wc.cb.createComment(myhtml_node_text(root, nullptr));
          return;
      default:
         // continue
         break;
     }
 
-    context.cb.preOrderVisit();
+    wc.cb.preOrderVisit();
 
     /* left hand depth-first recoursion */
     myhtml_tree_node_t* child = myhtml_node_child(root);
     while (child != NULL) {
-        transferSubTree(context, child);
+        transferSubTree(wc, child);
         child = myhtml_node_next(child);
     }
 
     // post-order
     auto ns = myhtml_node_namespace(root);
-    auto attributes = flatten_attributes(context.env, context.stringClass.id(), root);
-    context.cb.createElement({ns, nullptr}, {tag, nullptr}, attributes.ids, attributes.strings);
+    auto attributes = flatten_attributes(wc, root);
+    wc.cb.createElement({ns, nullptr}, {static_cast<std::uint32_t>(tag), nullptr}, attributes.ids, attributes.strings);
 
 }
 
@@ -248,7 +253,7 @@ void parseUTF8(JNIEnv *env, jlong c, jstring i, jobject callback) {
     // parse html
     myhtml_parse(tree, MyHTML_ENCODING_UTF_8, input, inputLength);
 
-    WalkContext wContext {env, context->stringClass, cb};
+    WalkContext wContext {env, context->stringClass, cb, {env}};
     transferSubTree(wContext, myhtml_tree_get_node_html(tree));
 
     // release resources
