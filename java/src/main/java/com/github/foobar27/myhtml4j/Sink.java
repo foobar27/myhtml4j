@@ -11,6 +11,6 @@ public interface Sink<N> {
 
     N createComment(String text);
 
-    N createElement(Namespace ns, Tag tag, List<Parser.Attribute> attributes, List<N> children);
+    N createElement(Namespace ns, Tag tag, List<Attribute> attributes, List<N> children);
 
 }

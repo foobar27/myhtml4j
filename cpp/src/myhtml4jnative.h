@@ -1,13 +1,15 @@
 #pragma once
 
 #include "jni.h"
+#include "myhtml4jnative_export.h"
 
+extern "C" {
 /*
  * Class:     com_github_foobar27_myhtml4j_Native
  * Method:    newContext
  * Signature: (Ljava/lang/Class;)J
  */
-JNIEXPORT jlong JNICALL Java_com_github_foobar27_myhtml4j_Native_newContext
+JNIEXPORT MYHTML4JNATIVE_EXPORT jlong JNICALL Java_com_github_foobar27_myhtml4j_Native_newContext
   (JNIEnv *, jclass, jclass);
 
 /*
@@ -15,7 +17,7 @@ JNIEXPORT jlong JNICALL Java_com_github_foobar27_myhtml4j_Native_newContext
  * Method:    deleteContext
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_github_foobar27_myhtml4j_Native_deleteContext
+JNIEXPORT MYHTML4JNATIVE_EXPORT void JNICALL Java_com_github_foobar27_myhtml4j_Native_deleteContext
   (JNIEnv *, jclass, jlong);
 
 
@@ -24,6 +26,6 @@ JNIEXPORT void JNICALL Java_com_github_foobar27_myhtml4j_Native_deleteContext
  * Method:    parseUTF8
  * Signature: (JLjava/lang/String;Lcom/github/foobar27/myhtml4j/Native/NativeCallBack;)V
  */
-JNIEXPORT void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8
+JNIEXPORT MYHTML4JNATIVE_EXPORT void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8
   (JNIEnv *, jclass, jlong, jstring, jobject);
-
+}

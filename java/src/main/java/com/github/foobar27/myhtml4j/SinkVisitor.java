@@ -39,7 +39,7 @@ class SinkVisitor<N> implements Visitor {
     }
 
     @Override
-    public void createElement(Namespace ns, Tag tag, List<Parser.Attribute> attributes) {
+    public void createElement(Namespace ns, Tag tag, List<Attribute> attributes) {
         List<N> children = childrenStack.pop();
         N newElement = sink.createElement(ns, tag, attributes, children);
         childrenStack.peek().add(newElement);

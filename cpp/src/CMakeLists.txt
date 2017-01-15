@@ -1,5 +1,7 @@
 set(CMAKE_CXX_STANDARD 14)
 
+include(GenerateExportHeader)
+
 find_package(JNI REQUIRED)
 
 add_library(myhtml4jnative SHARED myjni.h myjni.cpp myhtml4jnative.h myhtml4jnative.cpp atoms.cpp atoms.h)
@@ -19,7 +21,7 @@ add_custom_command(
 )
 
 add_custom_target(AttributeKeysGenerator DEPENDS ${AttributeKeysCpp}
-                  COMMENT "Checking if re-generation is required" )
+                  COMMENT "Checking if re-generation of AttributeKeysCpp is required" )
 
 add_dependencies(myhtml4jnative AttributeKeysGenerator)
 
@@ -29,3 +31,6 @@ set(MyHTML_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/../vendor/lib/libmyhtml_static.a)
 target_include_directories(myhtml4jnative
     PUBLIC ${JNI_INCLUDE_DIRS} ${MyHTML_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(myhtml4jnative PUBLIC ${JNI_LIBRARIES} ${MyHTML_LIBRARY})
+
+generate_export_header(myhtml4jnative
+    EXPORT_FILE_NAME ${GENERATED_DIRECTORY}/myhtml4jnative_export.h)

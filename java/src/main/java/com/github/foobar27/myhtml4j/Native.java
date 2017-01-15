@@ -10,7 +10,7 @@ import java.util.List;
 
 class Native {
 
-    private static final String JNI_LIBRARY_NAME = "myhtml4j";
+    private static final String JNI_LIBRARY_NAME = "myhtml4jnative";
 
     private static final Native INSTANCE = new Native();
 
@@ -69,7 +69,7 @@ class Native {
             } else {
                 attributes = new ArrayList<>(ids.length);
                 int stringsId = 0;
-                for (int i=0; i<ids.length; i =+ 2, stringsId += 2) {
+                for (int i=0; i<ids.length; i += 2, stringsId += 2) {
                     Namespace ns = Namespace.get(ids[i], null);
                     AttributeKey key = AttributeKey.get(ids[i+1], strings[stringsId]);
                     String value = strings[stringsId + 1];

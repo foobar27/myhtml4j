@@ -48,7 +48,7 @@ class JavaCallbackClass {
 
 public:
     JavaCallbackClass(JNIEnv *env, JClass c)
-        : m_internalError(c.getMethod<void>(env, "internalErorr", "()V"))
+        : m_internalError(c.getMethod<void>(env, "internalError", "()V"))
         , m_preOrderVisit(c.getMethod<void>(env, "preOrderVisit", "()V"))
         , m_createText(c.getMethod<void>(env, "createText", "(Ljava/lang/String;)V"))
         , m_createComment(c.getMethod<void>(env, "createComment", "(Ljava/lang/String;)V"))
