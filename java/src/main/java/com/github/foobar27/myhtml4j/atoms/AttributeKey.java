@@ -13,7 +13,7 @@ public final class AttributeKey {
 
     public static AttributeKey get(int id, String name) {
         if ((id >= 0) != (name == null)) {
-            throw new IllegalArgumentException("Positive ids must not have a name.");
+            throw new IllegalArgumentException("Positive ids must not have a name (id=" + id + ",name=" + name + ")");
         }
         if (id >= 0) {
             AttributeKey result = AttributeKeys.ALL_ATOMS[id];

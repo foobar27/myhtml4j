@@ -21,4 +21,37 @@ public class Myhtml4jTest {
                 root.toHtml());
     }
 
+    @Test
+    public void unknownAttributeKey() {
+        // This tests twice the same attribute.
+        // The second time should be a caches jstring (which we don't test here).
+        Node root = Myhtml4j.getInstance().parseUTF8("<div foo=\"bar\">Text</div><div foo=\"baz\">", NodeSink::new);
+        assertEquals("bar",
+                root.toHtml());
+    }
+
+    @Test
+    public void unknownTagName() {
+        // TODO
+        Node root = Myhtml4j.getInstance().parseUTF8("<div>Text</div>", NodeSink::new);
+        assertEquals("<html><head></head><body><foo>Text</foo></body></html>",
+                root.toHtml());
+    }
+
+    @Test
+    public void unknownTagNamespace() {
+        // TODO
+        Node root = Myhtml4j.getInstance().parseUTF8("<html xmlns=\"http://www.w3.org/1999/xhtml\">></html>", NodeSink::new);
+        assertEquals("bar",
+                root.toHtml());
+    }
+
+    @Test
+    public void unknownAttributeNamespace() {
+        // TODO
+        Node root = Myhtml4j.getInstance().parseUTF8("<html xmlns=\"http://www.w3.org/1999/xhtml\">></html>", NodeSink::new);
+        assertEquals("bar",
+                root.toHtml());
+    }
+
 }
