@@ -52,8 +52,8 @@ public class Element extends Node {
                 sb.append(" ");
                 sb.append(key);
                 sb.append("=\"");
-                escaper.escape(value);
-                sb.append("=\"");
+                sb.append(escaper.escape(value));
+                sb.append("\"");
             }
         }
         sb.append(">");

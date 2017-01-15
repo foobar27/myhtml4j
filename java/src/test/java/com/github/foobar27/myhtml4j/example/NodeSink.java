@@ -35,11 +35,7 @@ public class NodeSink implements Sink<Node> {
         // TODO should not ignore ns
         Map<String, List<String>> output = new HashMap<>();
         for (Attribute a : input) {
-            List<String> values = output.get(a.getKey().toString());  // TODO namespace ignored!
-            if (values == null) {
-                values = new ArrayList<>();
-                output.put(a.getKey().toString(), values);
-            }
+            List<String> values = output.computeIfAbsent(a.getKey().toString(), k -> new ArrayList<>());
             values.add(a.getValue());
         }
         return output;
