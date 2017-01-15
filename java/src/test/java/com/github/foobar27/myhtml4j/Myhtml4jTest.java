@@ -10,7 +10,7 @@ public class Myhtml4jTest {
     @Test
     public void parseShouldAddClosingTag() {
         Node root = Myhtml4j.getInstance().parseUTF8("<p id=\"1\" class=\"bold\">foo", NodeSink::new);
-        assertEquals("Element[http://www.w3.org/1999/xhtml,html,{},[Element[http://www.w3.org/1999/xhtml,head,{},[]], Element[http://www.w3.org/1999/xhtml,body,{},[Element[http://www.w3.org/1999/xhtml,p,{id=[1], class=[bold]},[Text[foo]]]]]]]",
+        assertEquals("Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,p,{id=[1], class=[bold]},[Text[foo]]]]]]]",
                 root.toString());
     }
 

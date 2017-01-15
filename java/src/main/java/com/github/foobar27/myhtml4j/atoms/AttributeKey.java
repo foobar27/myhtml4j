@@ -36,7 +36,7 @@ public final class AttributeKey {
 
     @Override
     public String toString() {
-        return "AttributeKey[" + id + "," + name + "]";
+        return name;
     }
 
     @Override

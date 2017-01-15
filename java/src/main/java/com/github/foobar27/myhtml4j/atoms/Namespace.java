@@ -37,7 +37,7 @@ public final class Namespace {
 
     @Override
     public String toString() {
-        return "Namespace[" + id + "," + name + "]";
+        return name;
     }
 
     @Override

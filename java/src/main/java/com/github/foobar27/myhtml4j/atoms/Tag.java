@@ -36,7 +36,7 @@ public final class Tag {
 
     @Override
     public String toString() {
-        return "Tag[" + id + "," + name + "]";
+        return name;
     }
 
     @Override

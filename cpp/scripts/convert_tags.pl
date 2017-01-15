@@ -57,6 +57,7 @@ sub generate_java_atom_class {
 	my $name = $id2name->{$id};
 	my $java_name = &java_name($name);
 	if (defined $name) {
+	    $name = lc $name;
 	    print $fh "    public static final $atom_class $java_name = new $atom_class($id, \"$name\");\n";
 	}
     }
