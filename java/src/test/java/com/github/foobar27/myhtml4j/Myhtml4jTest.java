@@ -32,8 +32,7 @@ public class Myhtml4jTest {
 
     @Test
     public void unknownTagName() {
-        // TODO
-        Node root = Myhtml4j.getInstance().parseUTF8("<div>Text</div>", NodeSink::new);
+        Node root = Myhtml4j.getInstance().parseUTF8("<foo>Text</foo>", NodeSink::new);
         assertEquals("<html><head></head><body><foo>Text</foo></body></html>",
                 root.toHtml());
     }

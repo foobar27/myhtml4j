@@ -8,16 +8,14 @@
 #include <string>
 #include <vector>
 
-// TODO use internal myhtml.tag_id etc
-
 struct IdJString {
 
-    IdJString(uint32_t id, jstring s)
+    IdJString(int32_t id, jstring s)
         : m_id(id)
         , m_string(s)
     {}
 
-    uint32_t id() const {
+    int32_t id() const {
         return m_id;
     }
 
@@ -26,19 +24,19 @@ struct IdJString {
     }
 
 private:
-    uint32_t m_id;
+    int32_t m_id;
     jstring m_string;
 };
 
 struct JTag : IdJString {
-    JTag(uint32_t id, jstring s)
+    JTag(int32_t id, jstring s)
         : IdJString(id, s)
     {}
 
 };
 
 struct JNamespace : IdJString {
-    JNamespace(uint32_t id, jstring s)
+    JNamespace(int32_t id, jstring s)
         : IdJString(id, s)
     {}
 
@@ -140,6 +138,7 @@ struct WalkContext {
     JClass stringClass;
     JavaCallbackObject & cb;
     AttributeKeyCache attributeKeyCache;
+    myhtml_tree_t* tree;
 };
 
 JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root) {
@@ -177,7 +176,7 @@ JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root)
         if (!stringArray) {
             throw 0; // TODO
         }
-        for (int i=0; i<strings.size(); ++i) {
+        for (size_t i=0; i<strings.size(); ++i) {
             auto string = strings[i];
             if (string) {
                 wc.env->SetObjectArrayElement(stringArray, i, string);
@@ -195,7 +194,6 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
     }
 
     auto tag = myhtml_node_tag_id(root);
-
     switch (tag) {
     case MyHTML_TAG__END_OF_FILE:
      case MyHTML_TAG__UNDEF:
@@ -221,9 +219,15 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
     }
 
     // post-order
+    int32_t signed_tag = tag;  // TODO is it possible to exploit this overflow?
+    jstring tag_name = nullptr;
+    if (tag >= 252) {
+        signed_tag = -1;
+        tag_name = ToJniType<std::string>::toJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
+    }
     auto ns = myhtml_node_namespace(root);
     auto attributes = flatten_attributes(wc, root);
-    wc.cb.createElement({ns, nullptr}, {static_cast<std::uint32_t>(tag), nullptr}, attributes.ids, attributes.strings);
+    wc.cb.createElement({ns, nullptr}, {signed_tag, tag_name}, attributes.ids, attributes.strings);
 
 }
 
@@ -251,7 +255,7 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     // parse html
     myhtml_parse(tree, MyHTML_ENCODING_UTF_8, input, inputLength);
 
-    WalkContext wContext {env, context->stringClass, cb, {env}};
+    WalkContext wContext {env, context->stringClass, cb, {env}, tree};
     transferSubTree(wContext, myhtml_tree_get_node_html(tree));
 
     // release resources
