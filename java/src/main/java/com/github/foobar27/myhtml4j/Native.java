@@ -3,6 +3,7 @@ package com.github.foobar27.myhtml4j;
 import com.github.foobar27.myhtml4j.atoms.AttributeKey;
 import com.github.foobar27.myhtml4j.atoms.Namespace;
 import com.github.foobar27.myhtml4j.atoms.Tag;
+import com.github.foobar27.myhtml4j.atoms.Tags;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +39,8 @@ class Native {
 
         private final Visitor delegate;
         boolean internalErrorOccurred;
+        private final ArrayList<String> knownTagNames = new ArrayList<>();
+        private static final int MAX_KNOWN_TAG_ID = 251;
 
         NativeCallBack(Visitor delegate) {
             if (delegate == null) {
@@ -75,6 +78,20 @@ class Native {
                     String value = strings[stringsId + 1];
                     attributes.add(new Attribute(ns, key, value));
                 }
+            }
+            if (tagId > MAX_KNOWN_TAG_ID) {
+                // The tag is not predefined, let's see if it has already been transferred.
+                int knownTagIndex = tagId - MAX_KNOWN_TAG_ID - 1;;
+                if (knownTagIndex < knownTagNames.size()) {
+                    tagString = knownTagNames.get(knownTagIndex);
+                } else {
+                    int nullElements = tagId - MAX_KNOWN_TAG_ID - knownTagNames.size() - 1;
+                    for (int i = 0; i < nullElements; ++i) {
+                        knownTagNames.add(null);
+                    }
+                    knownTagNames.add(tagString);
+                }
+                tagId = -1; // Do as if it was a new tag.
             }
             delegate.createElement(Namespace.get(nsId, nsString), Tag.get(tagId, tagString), attributes);
         }

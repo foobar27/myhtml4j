@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#define MAX_TAG_INDEX 251 // TODO magic value, where can we get it from?
+
 struct IdJString {
 
     IdJString(int32_t id, jstring s)
@@ -139,6 +141,7 @@ struct WalkContext {
     JavaCallbackObject & cb;
     AttributeKeyCache attributeKeyCache;
     myhtml_tree_t* tree;
+    std::vector<bool> seenTags;
 };
 
 JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root) {
@@ -211,7 +214,7 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
 
     wc.cb.preOrderVisit();
 
-    /* left hand depth-first recoursion */
+    /* left hand depth-first recursion */
     myhtml_tree_node_t* child = myhtml_node_child(root);
     while (child != NULL) {
         transferSubTree(wc, child);
@@ -219,11 +222,17 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
     }
 
     // post-order
-    int32_t signed_tag = tag;  // TODO is it possible to exploit this overflow?
+    int32_t signed_tag = tag;  // TODO is it possible to exploit this potential overflow?
     jstring tag_name = nullptr;
-    if (tag >= 252) {
-        signed_tag = -1;
-        tag_name = ToJniType<std::string>::toJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
+    if (tag > MAX_TAG_INDEX) {
+        auto seenTagIndex = tag - MAX_TAG_INDEX - 1;
+        if (seenTagIndex < wc.seenTags.size()) {
+            // already sent, nothing to do. Java side will know how to translate tag id.
+        } else {
+            wc.seenTags.resize(seenTagIndex + 1, false);
+            wc.seenTags[seenTagIndex] = true;
+            tag_name = ToJniType<std::string>::toJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
+        }
     }
     auto ns = myhtml_node_namespace(root);
     auto attributes = flatten_attributes(wc, root);
@@ -255,7 +264,7 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     // parse html
     myhtml_parse(tree, MyHTML_ENCODING_UTF_8, input, inputLength);
 
-    WalkContext wContext {env, context->stringClass, cb, {env}, tree};
+    WalkContext wContext {env, context->stringClass, cb, {env}, tree, {}};
     transferSubTree(wContext, myhtml_tree_get_node_html(tree));
 
     // release resources
