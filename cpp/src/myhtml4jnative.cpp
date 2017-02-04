@@ -49,6 +49,7 @@ class JavaCallbackClass {
 public:
     JavaCallbackClass(JNIEnv *env, JClass c)
         : m_internalError(c.getMethod<void>(env, "internalError", "()V"))
+        , m_setDoctype(c.getMethod<void>(env, "setDoctype", "([Ljava/lang/String;)V"))
         , m_preOrderVisit(c.getMethod<void>(env, "preOrderVisit", "()V"))
         , m_createText(c.getMethod<void>(env, "createText", "(Ljava/lang/String;)V"))
         , m_createComment(c.getMethod<void>(env, "createComment", "(Ljava/lang/String;)V"))
@@ -58,6 +59,7 @@ public:
 private:
     friend class JavaCallbackObject;
     JMethod<void> m_internalError;
+    JMethod<void> m_setDoctype;
     JMethod<void> m_preOrderVisit;
     JMethod<void> m_createText;
     JMethod<void> m_createComment;
@@ -74,6 +76,10 @@ public:
 
     void internalError() {
         m_class.m_internalError(m_env, m_object);
+    }
+
+    void setDoctype(jobjectArray attributes) {
+        m_class.m_setDoctype(m_env, m_object, attributes);
     }
 
     void preOrderVisit() {
@@ -144,6 +150,22 @@ struct WalkContext {
     std::vector<bool> seenTags;
 };
 
+jobjectArray stringArrayToObjectArray(WalkContext & wc, const std::vector<jstring> & strings) {
+    auto stringArray = wc.env->NewObjectArray(strings.size(), wc.stringClass.id(), nullptr);
+    {
+        if (!stringArray) {
+            throw 0; // TODO
+        }
+        for (size_t i=0; i<strings.size(); ++i) {
+            auto string = strings[i];
+            if (string) {
+                wc.env->SetObjectArrayElement(stringArray, i, string);
+            } // else take pre-initialized value of null
+        }
+    }
+    return stringArray;
+}
+
 JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root) {
     myhtml_tree_attr_t* attr = myhtml_node_attribute_first(root);
     if (!attr) {
@@ -174,20 +196,33 @@ JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root)
     }
 
     // Convert strings vector to JNI array
-    auto stringArray = wc.env->NewObjectArray(strings.size(), wc.stringClass.id(), nullptr);
-    {
-        if (!stringArray) {
-            throw 0; // TODO
-        }
-        for (size_t i=0; i<strings.size(); ++i) {
-            auto string = strings[i];
-            if (string) {
-                wc.env->SetObjectArrayElement(stringArray, i, string);
-            } // else take pre-initialized value of null
-        }
-    }
+    auto stringArray = stringArrayToObjectArray(wc, strings);
 
     return {idArray, stringArray};
+}
+
+void transferDoctype(WalkContext & wc, myhtml_tree_node_t* root) {
+    auto child = myhtml_node_child(root);
+    if (!child) {
+        return;
+    }
+    auto tag = myhtml_node_tag_id(child);
+    if (tag == MyHTML_TAG__DOCTYPE) {
+        myhtml_tree_attr_t* attr = myhtml_node_attribute_first(child);
+        std::vector<jstring> strings;
+        while (attr) {
+            auto key = myhtml_attribute_key(attr, nullptr);
+            auto value = myhtml_attribute_value(attr, nullptr);
+            if (key) {
+                strings.push_back(wc.env->NewStringUTF(key));
+            }
+            if (value) {
+                strings.push_back(wc.env->NewStringUTF(value));
+            }
+            attr = myhtml_attribute_next(attr);
+        }
+        wc.cb.setDoctype(stringArrayToObjectArray(wc, strings));
+    }
 }
 
 // TODO what happens on StackOverflow?
@@ -215,7 +250,7 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
     wc.cb.preOrderVisit();
 
     /* left hand depth-first recursion */
-    myhtml_tree_node_t* child = myhtml_node_child(root);
+    auto child = myhtml_node_child(root);
     while (child != NULL) {
         transferSubTree(wc, child);
         child = myhtml_node_next(child);
@@ -265,6 +300,8 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     myhtml_parse(tree, MyHTML_ENCODING_UTF_8, input, inputLength);
 
     WalkContext wContext {env, context->stringClass, cb, {env}, tree, {}};
+
+    transferDoctype(wContext, myhtml_tree_get_document(tree));
     transferSubTree(wContext, myhtml_tree_get_node_html(tree));
 
     // release resources

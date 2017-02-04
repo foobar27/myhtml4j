@@ -6,6 +6,7 @@ import com.github.foobar27.myhtml4j.atoms.Tag;
 import com.github.foobar27.myhtml4j.atoms.Tags;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -47,6 +48,10 @@ class Native {
                 throw new NullPointerException("Delegate must not be null!");
             }
             this.delegate = delegate;
+        }
+
+        void setDoctype(String[] args) {
+            delegate.setDoctype(Arrays.asList(args));
         }
 
         void internalError() {

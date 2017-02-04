@@ -31,10 +31,10 @@ public final class Myhtml4j {
         }
     }
 
-    public <N> N parseUTF8(String html, Supplier<Sink<N>> sinkFactory) {
+    public <N> Document<N> parseUTF8(String html, Supplier<Sink<N>> sinkFactory) {
         SinkVisitor<N> sink = new SinkVisitor<>(sinkFactory.get());
         parseUTF8(html, sink);
-        return sink.getParsedRoot();
+        return new Document<>(sink.getDoctype(), sink.getParsedRoot());
     }
 
 }

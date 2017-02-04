@@ -5,6 +5,7 @@ import com.github.foobar27.myhtml4j.atoms.Tag;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Stack;
 
 class SinkVisitor<N> implements Visitor {
@@ -21,6 +22,17 @@ class SinkVisitor<N> implements Visitor {
         assert (childrenStack.size() == 1);
         assert (childrenStack.peek().size() == 1);
         return childrenStack.peek().get(0);
+    }
+
+    private Optional<List<String>> doctype = Optional.empty();
+
+    public Optional<List<String>> getDoctype() {
+        return doctype;
+    }
+
+    @Override
+    public void setDoctype(List<String> args) {
+        this.doctype = Optional.of(args);
     }
 
     @Override

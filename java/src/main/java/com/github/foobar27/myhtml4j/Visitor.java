@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface Visitor {
 
+    void setDoctype(List<String> dt);
+
     void preOrderVisit();
 
     void createText(String text);
