@@ -269,5 +269,4 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
 
     // release resources
     myhtml_tree_destroy(tree);
-    myhtml_destroy(context->m_myhtml);
 }

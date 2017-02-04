@@ -8,6 +8,16 @@ import static org.junit.Assert.assertEquals;
 public class Myhtml4jTest {
 
     @Test
+    public void parsingTwice() {
+        Node root1 = Myhtml4j.getInstance().parseUTF8("<p id=\"1\" class=\"bold\">foo", NodeSink::new);
+        Node root2 = Myhtml4j.getInstance().parseUTF8("<p id=\"1\" class=\"bold\">foo", NodeSink::new);
+
+        assertEquals(root1.toString(), root2.toString());
+        assertEquals("Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,p,{id=[1], class=[bold]},[Text[foo]]]]]]]",
+                root1.toString());
+    }
+
+    @Test
     public void parseShouldAddClosingTag() {
         Node root = Myhtml4j.getInstance().parseUTF8("<p id=\"1\" class=\"bold\">foo", NodeSink::new);
         assertEquals("Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,p,{id=[1], class=[bold]},[Text[foo]]]]]]]",
