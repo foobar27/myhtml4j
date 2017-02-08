@@ -20,7 +20,7 @@ public class Myhtml4jTest {
     @Test
     public void unicodeParasing() {
         Node root = parse("<img alt=\"üüüüüüüü\"></img>").getRoot();
-        assertEquals("<html><head></head><body><img alt=\\\"üßäöüßäö\\\"></img></body></html>",
+        assertEquals("<html><head></head><body><img alt=\"üüüüüüüü\"></img></body></html>",
                 root.toHtml());
     }
 

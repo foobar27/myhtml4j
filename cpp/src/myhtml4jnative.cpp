@@ -4,6 +4,7 @@
 #include "myjni.h"
 #include "atoms.h"
 
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -289,7 +290,7 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     Context* context = (Context*) c;
     JavaCallbackObject cb(env, context->m_callbackClass, JObject(callback));
     const char *input = env->GetStringUTFChars(i, nullptr);
-    size_t inputLength = (size_t)env->GetStringLength(i);
+    size_t inputLength = strlen(input);
     // init tree
     myhtml_tree_t* tree = myhtml_tree_create();
     if (!tree) {
