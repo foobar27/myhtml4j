@@ -52,6 +52,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "myhtml4j native library")
 SET(CPACK_GENERATOR "DEB")
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Sebastien Wagener")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "java-runtime-headless (>= 1.8)")
 
 # This must always be last!
 include(CPack)
