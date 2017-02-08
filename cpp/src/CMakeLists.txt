@@ -37,3 +37,21 @@ target_link_libraries(myhtml4jnative PUBLIC ${JNI_LIBRARIES} ${MyHTML_LIBRARY})
 
 generate_export_header(myhtml4jnative
     EXPORT_FILE_NAME ${GENERATED_DIRECTORY}/myhtml4jnative_export.h)
+
+install(TARGETS myhtml4jnative
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION bin)
+
+set(CPACK_PACKAGE_NAME "myhtml4jnative")
+set(CPACK_PACKAGE_VENDOR "CMake.org")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "myhtml4j native library")
+set(CPACK_PACKAGE_VERSION "0.1")
+set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "1")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "myhtml4j native library")
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Sebastien Wagener")
+
+# This must always be last!
+include(CPack)
