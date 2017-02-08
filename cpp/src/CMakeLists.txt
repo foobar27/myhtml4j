@@ -40,7 +40,7 @@ generate_export_header(myhtml4jnative
 
 install(TARGETS myhtml4jnative
   ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION bin)
+  LIBRARY DESTINATION lib)
 
 set(CPACK_PACKAGE_NAME "myhtml4jnative")
 set(CPACK_PACKAGE_VENDOR "CMake.org")
