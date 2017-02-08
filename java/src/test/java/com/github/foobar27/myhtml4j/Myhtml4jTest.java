@@ -8,6 +8,24 @@ import static org.junit.Assert.assertEquals;
 public class Myhtml4jTest {
 
     @Test
+    public void html2textList() {
+        assertEquals("Foo Bar Baz",
+                html2text("<ul><li>Foo</li><li>Bar</li><li>Baz</li></ul>"));
+    }
+
+    @Test
+    public void html2textEntities() {
+        assertEquals("Sébastien Wagener",
+                html2text("<div>S&eacute;bastien&nbsp;Wagener</div>"));
+    }
+
+    @Test
+    public void html2textWhitespace() {
+        assertEquals("a b c",
+                html2text("a<br>b<div>c</div>"));
+    }
+
+    @Test
     public void parsingTwice() {
         Node root1 = parse("<p id=\"1\" class=\"bold\">foo").getRoot();
         Node root2 = parse("<p id=\"1\" class=\"bold\">foo").getRoot();
@@ -75,6 +93,10 @@ public class Myhtml4jTest {
         Document root = parse(html);
         assertEquals("Document[Optional[[html, PUBLIC, -//W3C//DTD HTML 4.01 Frameset//EN, http://www.w3.org/TR/html4/frameset.dtd]],Element[html,html,{},[Element[html,head,{},[Element[html,title,{},[Text[Hello world]]]]], Element[html,body,{},[]]]]]",
                 root.toString());
+    }
+
+    private static String html2text(String html) {
+        return Myhtml4j.getInstance().html2textUTF8(html);
     }
 
     private static Document<Node> parse(String html) {

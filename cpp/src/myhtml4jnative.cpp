@@ -1,13 +1,14 @@
+#include <cstring>
+#include <sstream>
+#include <iostream>
+#include <string>
+#include <vector>
+
 #include "myhtml/api.h"
 
 #include "myhtml4jnative.h"
 #include "myjni.h"
 #include "atoms.h"
-
-#include <cstring>
-#include <iostream>
-#include <string>
-#include <vector>
 
 #define MAX_TAG_INDEX 251 // TODO magic value, where can we get it from?
 
@@ -286,6 +287,242 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
 
 }
 
+void add_whitespace(myhtml_tag_id_t tag, std::stringstream & ss) {
+    switch (tag) {
+    // treat the following as whitespace: http://www.javased.com/?source_dir=ihtika/Sources/Bundles/JerichoBundle/src/main/java/net/htmlparser/jericho/TextExtractor.java
+    case MyHTML_TAG_BR:
+    case MyHTML_TAG_ADDRESS:
+    case MyHTML_TAG_ANNOTATION_XML:
+    case MyHTML_TAG_AREA:
+    case MyHTML_TAG_ARTICLE:
+    case MyHTML_TAG_ASIDE:
+    case MyHTML_TAG_AUDIO:
+    case MyHTML_TAG_BASE:
+    case MyHTML_TAG_BGSOUND:
+    case MyHTML_TAG_BLINK:
+    case MyHTML_TAG_BLOCKQUOTE:
+    case MyHTML_TAG_BODY:
+    case MyHTML_TAG_CANVAS:
+    case MyHTML_TAG_CAPTION:
+    case MyHTML_TAG_CENTER:
+    case MyHTML_TAG_COL:
+    case MyHTML_TAG_COLGROUP:
+    case MyHTML_TAG_COMMAND:
+    case MyHTML_TAG_COMMENT:
+    case MyHTML_TAG_DATALIST:
+    case MyHTML_TAG_DD:
+    case MyHTML_TAG_DETAILS:
+    case MyHTML_TAG_DIALOG:
+    case MyHTML_TAG_DIR:
+    case MyHTML_TAG_DIV:
+    case MyHTML_TAG_DL:
+    case MyHTML_TAG_DT:
+    case MyHTML_TAG_EMBED:
+    case MyHTML_TAG_FIELDSET:
+    case MyHTML_TAG_FIGCAPTION:
+    case MyHTML_TAG_FIGURE:
+    case MyHTML_TAG_FOOTER:
+    case MyHTML_TAG_FORM:
+    case MyHTML_TAG_FRAME:
+    case MyHTML_TAG_FRAMESET:
+    case MyHTML_TAG_H1:
+    case MyHTML_TAG_H2:
+    case MyHTML_TAG_H3:
+    case MyHTML_TAG_H4:
+    case MyHTML_TAG_H5:
+    case MyHTML_TAG_H6:
+    case MyHTML_TAG_HEAD:
+    case MyHTML_TAG_HEADER:
+    case MyHTML_TAG_HGROUP:
+    case MyHTML_TAG_HR:
+    case MyHTML_TAG_HTML:
+    case MyHTML_TAG_IMAGE:
+    case MyHTML_TAG_ISINDEX:
+    case MyHTML_TAG_LEGEND:
+    case MyHTML_TAG_LI:
+    case MyHTML_TAG_LINK:
+    case MyHTML_TAG_LISTING:
+    case MyHTML_TAG_MAIN:
+    case MyHTML_TAG_MARQUEE:
+    case MyHTML_TAG_MENU:
+    case MyHTML_TAG_MENUITEM:
+    case MyHTML_TAG_META:
+    case MyHTML_TAG_MTEXT:
+    case MyHTML_TAG_NAV:
+    case MyHTML_TAG_NOBR:
+    case MyHTML_TAG_NOEMBED:
+    case MyHTML_TAG_NOFRAMES:
+    case MyHTML_TAG_NOSCRIPT:
+    case MyHTML_TAG_OL:
+    case MyHTML_TAG_OPTGROUP:
+    case MyHTML_TAG_OPTION:
+    case MyHTML_TAG_P:
+    case MyHTML_TAG_PARAM:
+    case MyHTML_TAG_PLAINTEXT:
+    case MyHTML_TAG_PRE:
+    case MyHTML_TAG_RB:
+    case MyHTML_TAG_RTC:
+    case MyHTML_TAG_SECTION:
+    case MyHTML_TAG_SOURCE:
+    case MyHTML_TAG_STYLE:
+    case MyHTML_TAG_SUMMARY:
+    case MyHTML_TAG_SVG:
+    case MyHTML_TAG_TABLE:
+    case MyHTML_TAG_TBODY:
+    case MyHTML_TAG_TD:
+    case MyHTML_TAG_TEMPLATE:
+    case MyHTML_TAG_TFOOT:
+    case MyHTML_TAG_TH:
+    case MyHTML_TAG_THEAD:
+    case MyHTML_TAG_TITLE:
+    case MyHTML_TAG_TR:
+    case MyHTML_TAG_TRACK:
+    case MyHTML_TAG_UL:
+    case MyHTML_TAG_VIDEO:
+    case MyHTML_TAG_XMP:
+    case MyHTML_TAG_ALTGLYPH:
+    case MyHTML_TAG_ALTGLYPHDEF:
+    case MyHTML_TAG_ALTGLYPHITEM:
+    case MyHTML_TAG_ANIMATE:
+    case MyHTML_TAG_ANIMATECOLOR:
+    case MyHTML_TAG_ANIMATEMOTION:
+    case MyHTML_TAG_ANIMATETRANSFORM:
+    case MyHTML_TAG_CIRCLE:
+    case MyHTML_TAG_CLIPPATH:
+    case MyHTML_TAG_COLOR_PROFILE:
+    case MyHTML_TAG_CURSOR:
+    case MyHTML_TAG_DEFS:
+    case MyHTML_TAG_DESC:
+    case MyHTML_TAG_ELLIPSE:
+    case MyHTML_TAG_FEBLEND:
+    case MyHTML_TAG_FECOLORMATRIX:
+    case MyHTML_TAG_FECOMPONENTTRANSFER:
+    case MyHTML_TAG_FECOMPOSITE:
+    case MyHTML_TAG_FECONVOLVEMATRIX:
+    case MyHTML_TAG_FEDIFFUSELIGHTING:
+    case MyHTML_TAG_FEDISPLACEMENTMAP:
+    case MyHTML_TAG_FEDISTANTLIGHT:
+    case MyHTML_TAG_FEDROPSHADOW:
+    case MyHTML_TAG_FEFLOOD:
+    case MyHTML_TAG_FEFUNCA:
+    case MyHTML_TAG_FEFUNCB:
+    case MyHTML_TAG_FEFUNCG:
+    case MyHTML_TAG_FEFUNCR:
+    case MyHTML_TAG_FEGAUSSIANBLUR:
+    case MyHTML_TAG_FEIMAGE:
+    case MyHTML_TAG_FEMERGE:
+    case MyHTML_TAG_FEMERGENODE:
+    case MyHTML_TAG_FEMORPHOLOGY:
+    case MyHTML_TAG_FEOFFSET:
+    case MyHTML_TAG_FEPOINTLIGHT:
+    case MyHTML_TAG_FESPECULARLIGHTING:
+    case MyHTML_TAG_FESPOTLIGHT:
+    case MyHTML_TAG_FETILE:
+    case MyHTML_TAG_FETURBULENCE:
+    case MyHTML_TAG_FILTER:
+    case MyHTML_TAG_FONT_FACE:
+    case MyHTML_TAG_FONT_FACE_FORMAT:
+    case MyHTML_TAG_FONT_FACE_NAME:
+    case MyHTML_TAG_FONT_FACE_SRC:
+    case MyHTML_TAG_FONT_FACE_URI:
+    case MyHTML_TAG_FOREIGNOBJECT:
+    case MyHTML_TAG_G:
+    case MyHTML_TAG_GLYPH:
+    case MyHTML_TAG_GLYPHREF:
+    case MyHTML_TAG_HKERN:
+    case MyHTML_TAG_LINE:
+    case MyHTML_TAG_LINEARGRADIENT:
+    case MyHTML_TAG_MARKER:
+    case MyHTML_TAG_MASK:
+    case MyHTML_TAG_METADATA:
+    case MyHTML_TAG_MISSING_GLYPH:
+    case MyHTML_TAG_MPATH:
+    case MyHTML_TAG_PATH:
+    case MyHTML_TAG_PATTERN:
+    case MyHTML_TAG_POLYGON:
+    case MyHTML_TAG_POLYLINE:
+    case MyHTML_TAG_RADIALGRADIENT:
+    case MyHTML_TAG_RECT:
+    case MyHTML_TAG_SET:
+    case MyHTML_TAG_STOP:
+    case MyHTML_TAG_SWITCH:
+    case MyHTML_TAG_SYMBOL:
+    case MyHTML_TAG_TEXT:
+    case MyHTML_TAG_TEXTPATH:
+    case MyHTML_TAG_TREF:
+    case MyHTML_TAG_TSPAN:
+    case MyHTML_TAG_USE:
+    case MyHTML_TAG_VIEW:
+    case MyHTML_TAG_VKERN:
+    case MyHTML_TAG_MATH:
+    case MyHTML_TAG_MACTION:
+    case MyHTML_TAG_MALIGNGROUP:
+    case MyHTML_TAG_MALIGNMARK:
+    case MyHTML_TAG_MENCLOSE:
+    case MyHTML_TAG_MERROR:
+    case MyHTML_TAG_MFENCED:
+    case MyHTML_TAG_MFRAC:
+    case MyHTML_TAG_MGLYPH:
+    case MyHTML_TAG_MI:
+    case MyHTML_TAG_MLABELEDTR:
+    case MyHTML_TAG_MLONGDIV:
+    case MyHTML_TAG_MMULTISCRIPTS:
+    case MyHTML_TAG_MN:
+    case MyHTML_TAG_MO:
+    case MyHTML_TAG_MOVER:
+    case MyHTML_TAG_MPADDED:
+    case MyHTML_TAG_MPHANTOM:
+    case MyHTML_TAG_MROOT:
+    case MyHTML_TAG_MROW:
+    case MyHTML_TAG_MS:
+    case MyHTML_TAG_MSCARRIES:
+    case MyHTML_TAG_MSCARRY:
+    case MyHTML_TAG_MSGROUP:
+    case MyHTML_TAG_MSLINE:
+    case MyHTML_TAG_MSPACE:
+    case MyHTML_TAG_MSQRT:
+    case MyHTML_TAG_MSROW:
+    case MyHTML_TAG_MSTACK:
+    case MyHTML_TAG_MSTYLE:
+    case MyHTML_TAG_MSUB:
+    case MyHTML_TAG_MSUP:
+    case MyHTML_TAG_MSUBSUP:
+        ss << " ";
+        break;
+    }
+}
+
+void html2text(const Context & context, myhtml_tree_node_t *root, std::stringstream & ss) {
+    if (!root) {
+        return;
+    }
+    auto tag = myhtml_node_tag_id(root);
+    switch (tag) {
+    case MyHTML_TAG__END_OF_FILE:
+    case MyHTML_TAG_SCRIPT:
+    case MyHTML_TAG_STYLE:
+    case MyHTML_TAG__UNDEF:
+         return;
+
+    case MyHTML_TAG__TEXT:
+         ss << myhtml_node_text(root, nullptr);
+         return;
+    case MyHTML_TAG__COMMENT:
+         return;
+    default:
+        // continue
+        break;
+    }
+
+    add_whitespace(tag, ss);
+    auto child = myhtml_node_child(root);
+    while (child != NULL) {
+        html2text(context, child, ss);
+        child = myhtml_node_next(child);
+    }
+    add_whitespace(tag, ss);
+}
+
 void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jclass, jlong c, jstring i, jobject callback) {
     Context* context = (Context*) c;
     JavaCallbackObject cb(env, context->m_callbackClass, JObject(callback));
@@ -317,4 +554,33 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
 
     // release resources
     myhtml_tree_destroy(tree);
+}
+
+jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *env, jclass, jlong c, jstring i) {
+    Context* context = (Context*) c;
+    const char *input = env->GetStringUTFChars(i, nullptr);
+    size_t inputLength = strlen(input);
+    // init tree
+    myhtml_tree_t* tree = myhtml_tree_create();
+    if (!tree) {
+        std::cerr << "myhtml_tree_create failed" << std::endl;
+        return nullptr;
+    }
+
+    auto res = myhtml_tree_init(tree, context->m_myhtml);
+    if (MYHTML_FAILED(res)) {
+        std::cerr << "myhtml_tree_init failed with " << res << std::endl;
+        myhtml_tree_destroy(tree);
+        return nullptr;
+    }
+
+    // parse html
+    myhtml_parse(tree, MyHTML_ENCODING_UTF_8, input, inputLength);
+
+    std::stringstream ss;
+    html2text(*context, myhtml_tree_get_node_html(tree), ss);
+
+    // release resources
+    myhtml_tree_destroy(tree);
+    return stringToJni(env, ss.str());
 }

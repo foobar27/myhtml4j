@@ -36,6 +36,16 @@ class Native {
 
     static native void parseUTF8(long contextPointer, String s, NativeCallBack callback);
 
+    String html2textUTF8(String s) {
+        String result = html2textUTF8(contextPointer, s);
+        if (result == null) {
+            throw  new InternalError("Internal error in html2text");
+        }
+        return result;
+    }
+
+    static native String html2textUTF8(long contextPointer, String s);
+
     static final class NativeCallBack {
 
         private final Visitor delegate;

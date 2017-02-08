@@ -28,4 +28,8 @@ JNIEXPORT MYHTML4JNATIVE_EXPORT void JNICALL Java_com_github_foobar27_myhtml4j_N
  */
 JNIEXPORT MYHTML4JNATIVE_EXPORT void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8
   (JNIEnv *, jclass, jlong, jstring, jobject);
+
+JNIEXPORT MYHTML4JNATIVE_EXPORT jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8
+  (JNIEnv *, jclass, jlong, jstring);
+
 }

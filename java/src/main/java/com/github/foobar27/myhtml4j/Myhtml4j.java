@@ -1,5 +1,7 @@
 package com.github.foobar27.myhtml4j;
 
+import com.google.common.base.CharMatcher;
+
 import java.util.function.Supplier;
 
 public final class Myhtml4j {
@@ -35,6 +37,13 @@ public final class Myhtml4j {
         SinkVisitor<N> sink = new SinkVisitor<>(sinkFactory.get());
         parseUTF8(html, sink);
         return new Document<>(sink.getDoctype(), sink.getParsedRoot());
+    }
+
+    /**
+     * Extracts the text representation of an html string.
+     */
+    public String html2textUTF8(String html) {
+        return CharMatcher.WHITESPACE.trimAndCollapseFrom(nativeObject.html2textUTF8(html), ' ');
     }
 
 }
