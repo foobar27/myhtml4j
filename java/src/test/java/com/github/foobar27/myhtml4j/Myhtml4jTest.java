@@ -18,6 +18,13 @@ public class Myhtml4jTest {
     }
 
     @Test
+    public void unicodeParasing() {
+        Node root = parse("<img alt=\"üüüüüüüü\"></img>").getRoot();
+        assertEquals("<html><head></head><body><img alt=\\\"üßäöüßäö\\\"></img></body></html>",
+                root.toHtml());
+    }
+
+    @Test
     public void parseShouldAddClosingTag() {
         Node root = parse("<p id=\"1\" class=\"bold\">foo").getRoot();
         assertEquals("Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,p,{id=[1], class=[bold]},[Text[foo]]]]]]]",
