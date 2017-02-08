@@ -2,6 +2,9 @@ enable_testing()
 
 find_package(Boost REQUIRED COMPONENTS system filesystem unit_test_framework)
 
+set(CMAKE_CXX_STANDARD 14)
+#set (CMAKE_CXX_FLAGS "--std=c++14 ${CMAKE_CXX_FLAGS}")
+
 add_executable(jniTest jniTest.cpp)
 
 # TODO should not be necessary?
