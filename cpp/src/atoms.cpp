@@ -16,6 +16,9 @@ int32_t attribute_key_to_id(const char* s, unsigned int len) {
 
 AttributeKey AttributeKeyCache::get(const char* c_name) {
     using namespace std;
+    if (!c_name) {
+        c_name = "";
+    }
     auto length = strlen(c_name);
     auto id = attribute_key_to_id(c_name, length);
     if (id >= 0) {
@@ -26,7 +29,7 @@ AttributeKey AttributeKeyCache::get(const char* c_name) {
         if (name_it != m_cache.end()) {
             return {id, name_it->second};
         } else {
-            auto js = ToJniType<std::string>::toJni(m_env, name);
+            auto js = stringToJni(m_env, name);
             m_cache[name] = js;
             return {id, js};
         }

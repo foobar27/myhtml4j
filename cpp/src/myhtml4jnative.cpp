@@ -87,11 +87,11 @@ public:
     }
 
     void createText(const std::string & text) {
-        m_class.m_createText(m_env, m_object, ToJniType<std::string>::toJni(m_env, text));
+        m_class.m_createText(m_env, m_object, stringToJni(m_env, text));
     }
 
     void createComment(const std::string & text) {
-        m_class.m_createComment(m_env, m_object, ToJniType<std::string>::toJni(m_env, text));
+        m_class.m_createComment(m_env, m_object, stringToJni(m_env, text));
     }
 
     void createElement(const JNamespace & ns, const JTag & tag, jintArray ids, jobjectArray strings) {
@@ -176,7 +176,7 @@ JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root)
     while (attr) {
         auto aNs = myhtml_attribute_namespace(attr);
         auto aKey = wc.attributeKeyCache.get(myhtml_attribute_key(attr, nullptr));
-        auto aValue = wc.env->NewStringUTF(myhtml_attribute_value(attr, nullptr));
+        auto aValue = charArrayToJni(wc.env, myhtml_attribute_value(attr, nullptr));
 
         ids.push_back(aNs);
         ids.push_back(aKey.id);
@@ -237,10 +237,20 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
      case MyHTML_TAG__UNDEF:
          return;
      case MyHTML_TAG__TEXT:
-         wc.cb.createText(myhtml_node_text(root, nullptr));
+         {
+            auto txt = myhtml_node_text(root, nullptr);
+            if (txt) {
+                wc.cb.createText(txt);
+            }
+         }
          return;
      case MyHTML_TAG__COMMENT:
-         wc.cb.createComment(myhtml_node_text(root, nullptr));
+         {
+            auto txt = myhtml_node_text(root, nullptr);
+            if (txt) {
+                wc.cb.createComment(txt);
+            }
+         }
          return;
      default:
         // continue
@@ -266,7 +276,7 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
         } else {
             wc.seenTags.resize(seenTagIndex + 1, false);
             wc.seenTags[seenTagIndex] = true;
-            tag_name = ToJniType<std::string>::toJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
+            tag_name = charArrayToJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
         }
     }
     auto ns = myhtml_node_namespace(root);
