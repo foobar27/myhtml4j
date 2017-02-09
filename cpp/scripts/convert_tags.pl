@@ -1,5 +1,21 @@
 #!/usr/bin/perl
 
+# This file is part of the myhtml4j distribution.
+#   (https://github.com/foobar27/myhtml4j)
+# Copyright (c) 2017 Sebastien Wagener.
+#
+# myhtml4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as
+# published by the Free Software Foundation, version 3.
+#
+# myhtml4j is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 use strict;
 use warnings;
 
@@ -50,6 +66,23 @@ sub generate_java_atom_class {
     my $max_id = $tag_info->{"max_id"};
     open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
     print $fh "// WARNING This file has been automatically generated, do not edit!\n";
+    print $fh "/*\n";
+    print $fh " * This file is part of the myhtml4j distribution.\n";
+    print $fh " *   (https://github.com/foobar27/myhtml4j)\n";
+    print $fh " * Copyright (c) 2017 Sebastien Wagener.\n";
+    print $fh " *\n";
+    print $fh " * myhtml4j is free software: you can redistribute it and/or modify\n";
+    print $fh " * it under the terms of the GNU Lesser General Public License as\n";
+    print $fh " * published by the Free Software Foundation, version 3.\n";
+    print $fh " *\n";
+    print $fh " * myhtml4j is distributed in the hope that it will be useful, but\n";
+    print $fh " * WITHOUT ANY WARRANTY; without even the implied warranty of\n";
+    print $fh " * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU\n";
+    print $fh " * Lesser General Public License for more details.\n";
+    print $fh " *\n";
+    print $fh " * You should have received a copy of the GNU Lesser General Public License\n";
+    print $fh " * along with this program. If not, see <http://www.gnu.org/licenses/>.\n";
+    print $fh "*/\n";
     print $fh "package $PACKAGE_NAME;\n";
     print $fh "public class $class_name {\n";
     
