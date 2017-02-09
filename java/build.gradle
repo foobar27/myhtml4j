@@ -14,3 +14,47 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
     compile 'com.google.guava:guava:19.0'
 }
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            pom.withXml {
+                asNode().with {
+                    appendNode('name', 'myhtml4j')
+                    appendNode('url',
+                               'https://github.com/foobar27/myhtml4j')
+                    appendNode('description',
+                               'JNI wrapper around the myhtml html5 parser')
+                    appendNode('licenses').with {
+                        appendNode('license').with {
+                            appendNode('name', 'GNU Lesser General Public License (LGPL), Version 3.0')
+                            appendNode('url', 'http://www.fsf.org/licensing/licenses/lgpl.txt')
+                            appendNode('distribution', 'repo')
+                        }
+                    }
+                }
+            }
+            tasks.withType(Jar) {
+                from(project.projectDir) {
+                    include 'LICENSE.md'
+                    into 'META-INF'
+                }
+            }
+
+            artifact sourceJar
+            artifact javadocJar
+        }
+    }
+}
+
+task sourceJar(type: Jar, dependsOn: classes) {
+    classifier 'sources'
+    from sourceSets.main.allSource
+}
+ 
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
