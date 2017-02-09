@@ -96,8 +96,8 @@ class Native {
             }
             if (tagId > MAX_KNOWN_TAG_ID) {
                 // The tag is not predefined, let's see if it has already been transferred.
-                int knownTagIndex = tagId - MAX_KNOWN_TAG_ID - 1;;
-                if (knownTagIndex < knownTagNames.size()) {
+                int knownTagIndex = tagId - MAX_KNOWN_TAG_ID - 1;
+                if (knownTagIndex < knownTagNames.size() && tagString == null) {
                     tagString = knownTagNames.get(knownTagIndex);
                 } else {
                     int nullElements = tagId - MAX_KNOWN_TAG_ID - knownTagNames.size() - 1;

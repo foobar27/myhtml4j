@@ -274,7 +274,12 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
     if (tag > MAX_TAG_INDEX) {
         auto seenTagIndex = tag - MAX_TAG_INDEX - 1;
         if (seenTagIndex < wc.seenTags.size()) {
+          if (wc.seenTags[seenTagIndex])  {
             // already sent, nothing to do. Java side will know how to translate tag id.
+          } else {
+            wc.seenTags[seenTagIndex] = true;
+            tag_name = charArrayToJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
+          }
         } else {
             wc.seenTags.resize(seenTagIndex + 1, false);
             wc.seenTags[seenTagIndex] = true;
