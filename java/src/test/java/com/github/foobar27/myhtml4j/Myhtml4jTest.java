@@ -66,11 +66,20 @@ public class Myhtml4jTest {
     }
 
     @Test
-    public void unknownTagName() {
-        Node root = parse("<foo>Text1</foo><bar>Text2</bar><foo>Text3</foo/").getRoot();
+    public void unknownTagNamesSequential() {
+        Node root = parse("<foo>Text1</foo><bar>Text2</bar><foo>Text3</foo>").getRoot();
         assertEquals("<html><head></head><body><foo>Text1</foo><bar>Text2</bar><foo>Text3</foo></body></html>",
                 root.toHtml());
     }
+
+    @Test
+    public void unknownTagNamesNested() {
+        Node root = parse("<div><li><la><lu></lu></la></li></div>").getRoot();
+        assertEquals("<html><head></head><body><div><li><la><lu></lu></la></li></div></body></html>",
+                root.toHtml());
+    }
+
+
     @Test
     public void customNamespaces() {
         String html = "<html xmlns:tpl=\"http://example.com/\"><body><h1 tpl:bar=\"baz\">World!</h1></body></html>";
