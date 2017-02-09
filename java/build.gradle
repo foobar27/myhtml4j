@@ -38,7 +38,7 @@ publishing {
             }
             tasks.withType(Jar) {
                 from(project.projectDir) {
-                    include 'LICENSE.md'
+                    include 'LICENSE'
                     into 'META-INF'
                 }
             }
