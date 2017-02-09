@@ -504,10 +504,16 @@ void html2text(const Context & context, myhtml_tree_node_t *root, std::stringstr
     auto tag = myhtml_node_tag_id(root);
     switch (tag) {
     case MyHTML_TAG__END_OF_FILE:
-    case MyHTML_TAG_SCRIPT:
-    case MyHTML_TAG_STYLE:
     case MyHTML_TAG__UNDEF:
          return;
+
+    case MyHTML_TAG_SCRIPT:
+    case MyHTML_TAG_STYLE:
+    case MyHTML_TAG_TEXTAREA:
+    case MyHTML_TAG_OPTION:
+    case MyHTML_TAG_SELECT:
+      ss << " ";
+      return;
 
     case MyHTML_TAG__TEXT:
          ss << myhtml_node_text(root, nullptr);

@@ -26,6 +26,24 @@ public class Myhtml4jTest {
     }
 
     @Test
+    public void html2textInlineElement() {
+        assertEquals("Hello world",
+                html2text("Hello w<b>orl</b>d"));
+    }
+
+    @Test
+    public void html2TextScriptSpace() {
+        assertEquals("a b",
+                html2text("a<script></script>b"));
+    }
+
+    @Test
+    public void html2TextSSelect() {
+        assertEquals("a b",
+                html2text("a<select><option>Foo</option></select>b"));
+    }
+
+    @Test
     public void parsingTwice() {
         Node root1 = parse("<p id=\"1\" class=\"bold\">foo").getRoot();
         Node root2 = parse("<p id=\"1\" class=\"bold\">foo").getRoot();
