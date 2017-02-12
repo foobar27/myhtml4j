@@ -44,6 +44,10 @@ add_custom_target(AttributeKeysGenerator DEPENDS ${AttributeKeysCpp}
 
 add_dependencies(myhtml4jnative AttributeKeysGenerator)
 
+set_target_properties(myhtml4jnative PROPERTIES
+    VERSION ${myhtml4jnative_VERSION_AS_STRING}
+    SOVERSION ${myhtml4jnative_VERSION_AS_STRING})
+
 set(MyHTML_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/../vendor/include)
 set(MyHTML_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/../vendor/lib/libmyhtml_static.a)
 
@@ -61,10 +65,10 @@ install(TARGETS myhtml4jnative
 set(CPACK_PACKAGE_NAME "myhtml4jnative")
 set(CPACK_PACKAGE_VENDOR "CMake.org")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "myhtml4j native library")
-set(CPACK_PACKAGE_VERSION "0.1")
-set(CPACK_PACKAGE_VERSION_MAJOR "0")
-set(CPACK_PACKAGE_VERSION_MINOR "1")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION ${myhtml4jnative_VERSION_AS_STRING})
+set(CPACK_PACKAGE_VERSION_MAJOR "${myhtml4jnative_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${myhtml4jnative_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${myhtml4jnative_VERSION_PATCH}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "myhtml4j native library")
 SET(CPACK_GENERATOR "DEB")
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Sebastien Wagener")
