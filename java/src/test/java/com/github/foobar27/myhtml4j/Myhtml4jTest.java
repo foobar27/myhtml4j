@@ -61,6 +61,18 @@ public class Myhtml4jTest {
     }
 
     @Test
+    public void testHtml2textCarriageReturn() {
+        assertEquals("Foo a",
+                html2text("<div>Foo\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r</div>a"));
+    }
+
+    @Test
+    public void testParsingCarriageReturn() {
+        assertEquals("Document[Optional.empty,Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,div,{},[Text[Foo]]]]]]]]",
+                parse("<div>Foo\r</div>").toString());
+    }
+
+    @Test
     public void parsingTwice() {
         Node root1 = parse("<p id=\"1\" class=\"bold\">foo").getRoot();
         Node root2 = parse("<p id=\"1\" class=\"bold\">foo").getRoot();
