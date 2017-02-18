@@ -554,8 +554,7 @@ void html2text(const Context & context, myhtml_tree_node_t *root, std::stringstr
 void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jclass, jlong c, jstring i, jobject callback) {
     Context* context = (Context*) c;
     JavaCallbackObject cb(env, context->m_callbackClass, JObject(callback));
-    jboolean isCopy;
-    const char *input = env->GetStringUTFChars(i, &isCopy);
+    const char *input = env->GetStringUTFChars(i, nullptr);
     size_t inputLength = strlen(input);
     // init tree
     myhtml_tree_t* tree = myhtml_tree_create();
@@ -583,15 +582,12 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
 
     // release resources
     myhtml_tree_destroy(tree);
-    if (isCopy) {
-        env->ReleaseStringUTFChars(i, input);
-    }
+    env->ReleaseStringUTFChars(i, input);
 }
 
 jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *env, jclass, jlong c, jstring i) {
     Context* context = (Context*) c;
-    jboolean isCopy;
-    const char *input = env->GetStringUTFChars(i, &isCopy);
+    const char *input = env->GetStringUTFChars(i, nullptr);
     //std::cout << "input: " << input << std::endl;
     size_t inputLength = strlen(input);
     // init tree
@@ -617,8 +613,6 @@ jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *e
 
     // release resources
     myhtml_tree_destroy(tree);
-    if (isCopy) {
-        env->ReleaseStringUTFChars(i, input);
-    }
+    env->ReleaseStringUTFChars(i, input);
     return stringToJni(env, ss.str());
 }
