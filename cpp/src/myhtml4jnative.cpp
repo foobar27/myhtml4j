@@ -554,7 +554,8 @@ void html2text(const Context & context, myhtml_tree_node_t *root, std::stringstr
 void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jclass, jlong c, jstring i, jobject callback) {
     Context* context = (Context*) c;
     JavaCallbackObject cb(env, context->m_callbackClass, JObject(callback));
-    const char *input = env->GetStringUTFChars(i, nullptr);
+    jboolean isCopy;
+    const char *input = env->GetStringUTFChars(i, &isCopy);
     size_t inputLength = strlen(input);
     // init tree
     myhtml_tree_t* tree = myhtml_tree_create();
@@ -582,16 +583,21 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
 
     // release resources
     myhtml_tree_destroy(tree);
+    if (isCopy) {
+        env->ReleaseStringUTFChars(i, input);
+    }
 }
 
 jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *env, jclass, jlong c, jstring i) {
     Context* context = (Context*) c;
-    const char *input = env->GetStringUTFChars(i, nullptr);
+    jboolean isCopy;
+    const char *input = env->GetStringUTFChars(i, &isCopy);
+    //std::cout << "input: " << input << std::endl;
     size_t inputLength = strlen(input);
     // init tree
     myhtml_tree_t* tree = myhtml_tree_create();
     if (!tree) {
-        std::cerr << "myhtml_tree_create failed" << std::endl;
+        //std::cerr << "myhtml_tree_create failed" << std::endl;
         return nullptr;
     }
 
@@ -607,8 +613,12 @@ jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *e
 
     std::stringstream ss;
     html2text(*context, myhtml_tree_get_node_html(tree), ss);
+    std::cout << "output: " << ss.str() << std::endl;
 
     // release resources
     myhtml_tree_destroy(tree);
+    if (isCopy) {
+        env->ReleaseStringUTFChars(i, input);
+    }
     return stringToJni(env, ss.str());
 }
