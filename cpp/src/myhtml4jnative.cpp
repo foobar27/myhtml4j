@@ -609,7 +609,6 @@ jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *e
 
     std::stringstream ss;
     html2text(*context, myhtml_tree_get_node_html(tree), ss);
-    std::cout << "output: " << ss.str() << std::endl;
 
     // release resources
     myhtml_tree_destroy(tree);
