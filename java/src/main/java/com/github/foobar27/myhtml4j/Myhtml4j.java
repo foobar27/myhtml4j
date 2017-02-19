@@ -17,10 +17,10 @@
 */
 package com.github.foobar27.myhtml4j;
 
-import com.github.foobar27.nativeloader.DefaultNamingScheme;
-import com.github.foobar27.nativeloader.NativeInitializer;
-import com.github.foobar27.nativeloader.NativeLoader;
-import com.github.foobar27.nativeloader.NativeLoaderFactory;
+import com.github.foobar27.nativeinitializer.DefaultNamingScheme;
+import com.github.foobar27.nativeinitializer.NativeInitializer;
+import com.github.foobar27.nativeinitializer.NativeLoader;
+import com.github.foobar27.nativeinitializer.NativeLoaderFactory;
 import com.google.common.base.CharMatcher;
 
 import java.util.function.Supplier;
