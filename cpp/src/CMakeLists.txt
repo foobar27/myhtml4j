@@ -55,6 +55,11 @@ target_include_directories(myhtml4jnative
     PUBLIC ${JNI_INCLUDE_DIRS} ${MyHTML_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(myhtml4jnative PUBLIC ${JNI_LIBRARIES} ${MyHTML_LIBRARY})
 
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../java/src/main/resources/lib)
+add_custom_command(TARGET myhtml4jnative
+    POST_BUILD
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/libmyhtml4jnative.so ${CMAKE_CURRENT_SOURCE_DIR}/../../java/src/main/resources/lib/linux-amd64)
+
 generate_export_header(myhtml4jnative
     EXPORT_FILE_NAME ${GENERATED_DIRECTORY}/myhtml4jnative_export.h)
 
