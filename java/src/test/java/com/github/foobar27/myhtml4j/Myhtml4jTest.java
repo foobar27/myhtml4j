@@ -61,9 +61,15 @@ public class Myhtml4jTest {
     }
 
     @Test
-    public void testHtml2textCarriageReturn() {
+    public void testHtml2textFinalCarriageReturn() {
         assertEquals("Foo a",
                 html2text("<div>Foo\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r</div>a"));
+    }
+
+    @Test
+    public void testHtml2textCarriageReturn() {
+        assertEquals("Foo Bar",
+                html2text("<div>Foo\rBar</div>"));
     }
 
     @Test
