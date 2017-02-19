@@ -20,7 +20,6 @@ package com.github.foobar27.myhtml4j;
 import com.github.foobar27.myhtml4j.atoms.AttributeKey;
 import com.github.foobar27.myhtml4j.atoms.Namespace;
 import com.github.foobar27.myhtml4j.atoms.Tag;
-import com.github.foobar27.myhtml4j.atoms.Tags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,20 +28,10 @@ import java.util.List;
 
 class Native {
 
-    private static final String JNI_LIBRARY_NAME = "myhtml4jnative";
-
-    private static final Native INSTANCE = new Native();
-
     private final long contextPointer;
 
-    private Native() {
-        // guaranteed to be called once (Singleton pattern)
-        System.loadLibrary(JNI_LIBRARY_NAME);
+    Native() {
         this.contextPointer = newContext(NativeCallBack.class);
-    }
-
-    static Native getInstance() {
-        return INSTANCE;
     }
 
     private static native long newContext(Class callback);
@@ -56,7 +45,7 @@ class Native {
     String html2textUTF8(String s) {
         String result = html2textUTF8(contextPointer, s);
         if (result == null) {
-            throw  new InternalError("Internal error in html2text");
+            throw new InternalError("Internal error in html2text");
         }
         return result;
     }
@@ -104,9 +93,9 @@ class Native {
             } else {
                 attributes = new ArrayList<>(ids.length);
                 int stringsId = 0;
-                for (int i=0; i<ids.length; i += 2, stringsId += 2) {
+                for (int i = 0; i < ids.length; i += 2, stringsId += 2) {
                     Namespace ns = Namespace.get(ids[i], null);
-                    AttributeKey key = AttributeKey.get(ids[i+1], strings[stringsId]);
+                    AttributeKey key = AttributeKey.get(ids[i + 1], strings[stringsId]);
                     String value = strings[stringsId + 1];
                     attributes.add(new Attribute(ns, key, value));
                 }

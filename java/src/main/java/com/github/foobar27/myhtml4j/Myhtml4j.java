@@ -17,29 +17,50 @@
 */
 package com.github.foobar27.myhtml4j;
 
+import com.github.foobar27.nativeloader.DefaultNamingScheme;
+import com.github.foobar27.nativeloader.NativeInitializer;
+import com.github.foobar27.nativeloader.NativeLoader;
+import com.github.foobar27.nativeloader.NativeLoaderFactory;
 import com.google.common.base.CharMatcher;
 
 import java.util.function.Supplier;
 
 public final class Myhtml4j {
 
-    private static final Myhtml4j INSTANCE = new Myhtml4j();
+    private static NativeLoaderFactory NATIVE_LOADER_FACTORY =
+            new NativeLoaderFactory(new DefaultNamingScheme("myhtml4jnative"));
+
+    private static final NativeInitializer<Myhtml4j> INITIALIZER =
+            new NativeInitializer<>(
+                    NATIVE_LOADER_FACTORY
+                            .resourceLoaderTempDirectory()
+                            .fallbackTo(NATIVE_LOADER_FACTORY.systemLoader()),
+                    () -> new Myhtml4j(new Native()));
+
+    public static NativeLoaderFactory getNativeLoaderFactory() {
+        return NATIVE_LOADER_FACTORY;
+    }
+
+    /**
+     * Sets the NativeLoader
+     */
+    public static void setNativeLoader(NativeLoader loader) {
+        INITIALIZER.setNativeLoader(loader);
+    }
 
     public static Myhtml4j getInstance() {
-        return INSTANCE;
+        return INITIALIZER.get();
     }
 
     private final Native nativeObject;
 
-    private Myhtml4j() {
-        this.nativeObject = Native.getInstance();
+    private Myhtml4j(Native nativeObject) {
+        this.nativeObject = nativeObject;
     }
 
     /**
-     *
-     * @param html The input string, UTF-8 encoded.
+     * @param html     The input string, UTF-8 encoded.
      * @param callback To be called on each parsing step.
-     *
      * @throws InternalError if an internal error occurred while parsing.
      */
     public void parseUTF8(String html, Visitor callback) {
