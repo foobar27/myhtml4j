@@ -20,9 +20,21 @@ group 'com.github.foobar27'
 version '0.1.0'
 
 apply plugin: 'java'
-apply plugin: 'maven-publish'
+apply plugin: 'maven'
+apply plugin: 'signing'
 
 sourceCompatibility = 1.8
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3"
+    }
+}
+apply plugin: 'io.codearte.nexus-staging'
+
 
 repositories {
     mavenCentral()
@@ -31,49 +43,73 @@ repositories {
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
     compile 'com.google.guava:guava:19.0'
-    compile 'com.github.foobar27:nativeinitializer:0.1.0'
+    compile 'com.github.foobar27:native-initializer:0.1.1'
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-
-            pom.withXml {
-                asNode().with {
-                    appendNode('name', 'myhtml4j')
-                    appendNode('url',
-                               'https://github.com/foobar27/myhtml4j')
-                    appendNode('description',
-                               'JNI wrapper around the myhtml html5 parser')
-                    appendNode('licenses').with {
-                        appendNode('license').with {
-                            appendNode('name', 'GNU Lesser General Public License (LGPL), Version 3.0')
-                            appendNode('url', 'http://www.fsf.org/licensing/licenses/lgpl.txt')
-                            appendNode('distribution', 'repo')
-                        }
-                    }
-                }
-            }
-            tasks.withType(Jar) {
-                from(project.projectDir) {
-                    include 'LICENSE'
-                    into 'META-INF'
-                }
-            }
-
-            artifact sourceJar
-            artifact javadocJar
-        }
-    }
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
 }
 
-task sourceJar(type: Jar, dependsOn: classes) {
-    classifier 'sources'
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
     from sourceSets.main.allSource
 }
- 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name 'myhtml4j'
+                url 'https://github.com/foobar27/myhtml4j'
+                description 'JNI wrapper around the myhtml html5 parser'
+                packaging 'jar'
+                url 'http://www.example.com/example-application'
+
+                scm {
+                    connection 'scm:git:git://github.com/foobar27/myhtml4j.git'
+                    developerConnection 'scm:git:ssh://github.com:foobar27/myhtml4j.git'
+                    url 'http://github.com/foobar27/myhtml4j/tree/master'
+                }
+
+                licenses {
+                    license {
+                        name 'GNU Lesser General Public License (LGPL), Version 3.0'
+                        url 'http://www.fsf.org/licensing/licenses/lgpl.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'foobar27'
+                        name 'Sebastien Wagener'
+                        email 'sebastien.wagener@gmail.com'
+                    }
+                }
+                issueManagement {
+                    system 'github'
+                    url 'https://github.com/foobar27/myhtml4j/issues'
+                }
+            }
+        }
+    }
 }
