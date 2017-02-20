@@ -53,7 +53,7 @@ set(MyHTML_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/../vendor/lib/libmyhtml_static.a)
 
 target_include_directories(myhtml4jnative
     PUBLIC ${JNI_INCLUDE_DIRS} ${MyHTML_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/generated)
-target_link_libraries(myhtml4jnative PUBLIC ${JNI_LIBRARIES} ${MyHTML_LIBRARY})
+target_link_libraries(myhtml4jnative PUBLIC ${MyHTML_LIBRARY})
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../java/src/main/resources/lib)
 add_custom_command(TARGET myhtml4jnative
