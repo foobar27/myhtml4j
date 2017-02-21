@@ -23,12 +23,31 @@ import com.github.foobar27.nativeinitializer.NativeLoader;
 import com.github.foobar27.nativeinitializer.NativeLoaderFactory;
 import com.google.common.base.CharMatcher;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import java.util.function.Supplier;
 
 public final class Myhtml4j {
 
+    private static final String VERSION;
+
+    static {
+        try {
+            InputStream input = Myhtml4j.class.getClassLoader().getResourceAsStream("myhtml4j-version.properties");
+            if (input == null) {
+                throw new IllegalStateException("Resource myhtml4j-version.properties not found");
+            }
+            Properties prop = System.getProperties();
+            prop.load(input);
+            VERSION = prop.getProperty("myhtml4j-version");
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot determine myhtml4j version!", e);
+        }
+    }
+
     private static NativeLoaderFactory NATIVE_LOADER_FACTORY =
-            new NativeLoaderFactory(new DefaultNamingScheme("myhtml4jnative"));
+            new NativeLoaderFactory(new DefaultNamingScheme("myhtml4jnative", VERSION));
 
     private static final NativeInitializer<Myhtml4j> INITIALIZER =
             new NativeInitializer<>(
