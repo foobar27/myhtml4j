@@ -106,11 +106,11 @@ class Native {
                 if (knownTagIndex < knownTagNames.size() && tagString == null) {
                     tagString = knownTagNames.get(knownTagIndex);
                 } else {
-                    int nullElements = tagId - MAX_KNOWN_TAG_ID - knownTagNames.size() - 1;
+                    int nullElements = tagId - MAX_KNOWN_TAG_ID - knownTagNames.size();
                     for (int i = 0; i < nullElements; ++i) {
                         knownTagNames.add(null);
                     }
-                    knownTagNames.add(tagString);
+                    knownTagNames.set(knownTagIndex, tagString);
                 }
                 tagId = -1; // Do as if it was a new tag.
             }
