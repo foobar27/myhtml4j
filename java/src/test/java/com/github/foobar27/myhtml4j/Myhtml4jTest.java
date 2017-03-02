@@ -17,8 +17,14 @@
 */
 package com.github.foobar27.myhtml4j;
 
+import com.github.foobar27.myhtml4j.atoms.Namespace;
+import com.github.foobar27.myhtml4j.atoms.Tag;
 import com.github.foobar27.myhtml4j.example.*;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.InvalidPropertiesFormatException;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -155,6 +161,37 @@ public class Myhtml4jTest {
         Document root = parse(html);
         assertEquals("Document[Optional[[html, PUBLIC, -//W3C//DTD HTML 4.01 Frameset//EN, http://www.w3.org/TR/html4/frameset.dtd]],Element[html,html,{},[Element[html,head,{},[Element[html,title,{},[Text[Hello world]]]]], Element[html,body,{},[]]]]]",
                 root.toString());
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void callbackExceptionHandling() {
+        String html = "<div>Foo</div>";
+        Myhtml4j.getInstance().parseUTF8(html, new Visitor() {
+            @Override
+            public void setDoctype(List<String> dt) {
+
+            }
+
+            @Override
+            public void preOrderVisit() {
+
+            }
+
+            @Override
+            public void createText(String text) {
+
+            }
+
+            @Override
+            public void createComment(String text) {
+
+            }
+
+            @Override
+            public void createElement(Namespace ns, Tag tag, List<Attribute> attributes) {
+                throw new IllegalStateException("foo");
+            }
+        });
     }
 
     private static String html2text(String html) {
