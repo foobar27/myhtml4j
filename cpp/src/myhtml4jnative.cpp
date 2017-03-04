@@ -15,9 +15,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
+#include <algorithm>
 #include <cstring>
 #include <sstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -244,17 +246,12 @@ void transferDoctype(WalkContext & wc, myhtml_tree_node_t* root) {
     }
 }
 
-// TODO what happens on StackOverflow?
-void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
-    if (!root) {
-        return;
-    }
-
+bool handlePreOrder(WalkContext & wc, myhtml_tree_node_t* root) {
     auto tag = myhtml_node_tag_id(root);
     switch (tag) {
-    case MyHTML_TAG__END_OF_FILE:
+     case MyHTML_TAG__END_OF_FILE:
      case MyHTML_TAG__UNDEF:
-         return;
+         return false;
      case MyHTML_TAG__TEXT:
          {
             auto txt = myhtml_node_text(root, nullptr);
@@ -262,7 +259,7 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
                 wc.cb.createText(txt);
             }
          }
-         return;
+         return false;
      case MyHTML_TAG__COMMENT:
          {
             auto txt = myhtml_node_text(root, nullptr);
@@ -270,22 +267,18 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
                 wc.cb.createComment(txt);
             }
          }
-         return;
+         return false;
      default:
         // continue
         break;
     }
 
     wc.cb.preOrderVisit();
+    return true;
+}
 
-    /* left hand depth-first recursion */
-    auto child = myhtml_node_child(root);
-    while (child != NULL) {
-        transferSubTree(wc, child);
-        child = myhtml_node_next(child);
-    }
-
-    // post-order
+void handlePostOrder(WalkContext & wc, myhtml_tree_node_t* root) {
+    auto tag = myhtml_node_tag_id(root);
     int32_t signed_tag = tag;  // TODO is it possible to exploit this potential overflow?
     jstring tag_name = nullptr;
     if (tag > MAX_TAG_INDEX) {
@@ -306,7 +299,55 @@ void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
     auto ns = myhtml_node_namespace(root);
     auto attributes = flatten_attributes(wc, root);
     wc.cb.createElement({ns, nullptr}, {signed_tag, tag_name}, attributes.ids, attributes.strings);
+}
 
+// Recursive pseudo-code for the following iterative implementation:
+//void transferSubTree(root) {
+//    if (!handlePreOrder(root)) {
+//        return;
+//    }
+//    for (child : children) {
+//        transferSubTree(child);
+//    }
+//    handlePostOrder(wc, root);
+//}
+
+void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
+    using namespace std;
+    using node = myhtml_tree_node_t*;
+    if (!root) {
+        return; // nothing to do
+    }
+    vector<node> stackA;
+    vector<node> stackB;
+    stackA.push_back(root);
+    while (!stackA.empty()) {
+        auto n = stackA.back();
+        stackA.pop_back();
+
+        if (n) {
+            if (!handlePreOrder(wc, n)) {
+                continue;
+            }
+            stackB.push_back(n);
+
+            // Add special token to stackA which will trigger a post-order visit
+            stackA.push_back(nullptr);
+
+            // Add children to stackA (reverse order)
+            vector<node> children;
+            auto child = myhtml_node_child(n);
+            while (child) {
+                children.push_back(child);
+                child = myhtml_node_next(child);
+            }
+
+            copy(children.rbegin(), children.rend(), back_inserter(stackA));
+        } else {
+            handlePostOrder(wc, stackB.back());
+            stackB.pop_back();
+        }
+    }
 }
 
 void add_whitespace(myhtml_tag_id_t tag, std::stringstream & ss) {
@@ -588,7 +629,6 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
 jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *env, jclass, jlong c, jstring i) {
     Context* context = (Context*) c;
     const char *input = env->GetStringUTFChars(i, nullptr);
-    //std::cout << "input: " << input << std::endl;
     size_t inputLength = strlen(input);
     // init tree
     myhtml_tree_t* tree = myhtml_tree_create();

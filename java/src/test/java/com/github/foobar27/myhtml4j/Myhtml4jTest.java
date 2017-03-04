@@ -19,16 +19,18 @@ package com.github.foobar27.myhtml4j;
 
 import com.github.foobar27.myhtml4j.atoms.Namespace;
 import com.github.foobar27.myhtml4j.atoms.Tag;
-import com.github.foobar27.myhtml4j.example.*;
+import com.github.foobar27.myhtml4j.example.Node;
+import com.github.foobar27.myhtml4j.example.NodeSink;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.InvalidPropertiesFormatException;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
 
 public class Myhtml4jTest {
+
+    private static final Logger log = Logger.getLogger(Myhtml4j.class.getName());
 
     @Test
     public void html2textList() {
@@ -163,7 +165,25 @@ public class Myhtml4jTest {
                 root.toString());
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test
+    public void nested() {
+        int depth = 100; // TODO test for StackOverflow (but would need an iterative
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><head></head><body>");
+        for (int i = 0; i < depth; ++i) {
+            sb.append("<div id=\"").append(i).append("\">");
+        }
+        for (int i = 0; i < depth; ++i) {
+            sb.append("</div>");
+        }
+        sb.append("</body></html>");
+        String html = sb.toString();
+        log.info("length: " + html.length());
+        Document<Node> root = parse(html);
+        assertEquals(html, root.getRoot().toHtml());
+    }
+
+    @Test(expected = IllegalStateException.class)
     public void callbackExceptionHandling() {
         String html = "<div>Foo</div>";
         Myhtml4j.getInstance().parseUTF8(html, new Visitor() {
