@@ -28,6 +28,8 @@
 #include "myhtml4jnative.h"
 #include "myjni.h"
 #include "atoms.h"
+#include "traverser.h"
+#include "adapter.h"
 
 #define MAX_TAG_INDEX 251 // TODO magic value, where can we get it from?
 
@@ -246,108 +248,71 @@ void transferDoctype(WalkContext & wc, myhtml_tree_node_t* root) {
     }
 }
 
-bool handlePreOrder(WalkContext & wc, myhtml_tree_node_t* root) {
-    auto tag = myhtml_node_tag_id(root);
-    switch (tag) {
-     case MyHTML_TAG__END_OF_FILE:
-     case MyHTML_TAG__UNDEF:
-         return false;
-     case MyHTML_TAG__TEXT:
-         {
-            auto txt = myhtml_node_text(root, nullptr);
-            if (txt) {
-                wc.cb.createText(txt);
-            }
-         }
-         return false;
-     case MyHTML_TAG__COMMENT:
-         {
-            auto txt = myhtml_node_text(root, nullptr);
-            if (txt) {
-                wc.cb.createComment(txt);
-            }
-         }
-         return false;
-     default:
-        // continue
-        break;
-    }
+struct TransferTreeVisitor {
+    using Node = myhtml_tree_node_t*;
 
-    wc.cb.preOrderVisit();
-    return true;
-}
+    WalkContext & wc;
 
-void handlePostOrder(WalkContext & wc, myhtml_tree_node_t* root) {
-    auto tag = myhtml_node_tag_id(root);
-    int32_t signed_tag = tag;  // TODO is it possible to exploit this potential overflow?
-    jstring tag_name = nullptr;
-    if (tag > MAX_TAG_INDEX) {
-        auto seenTagIndex = tag - MAX_TAG_INDEX - 1;
-        if (seenTagIndex < wc.seenTags.size()) {
-          if (wc.seenTags[seenTagIndex])  {
-            // already sent, nothing to do. Java side will know how to translate tag id.
-          } else {
-            wc.seenTags[seenTagIndex] = true;
-            tag_name = charArrayToJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
-          }
-        } else {
-            wc.seenTags.resize(seenTagIndex + 1, false);
-            wc.seenTags[seenTagIndex] = true;
-            tag_name = charArrayToJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
+    bool pre(Node node) {
+        auto tag = myhtml_node_tag_id(node);
+        switch (tag) {
+         case MyHTML_TAG__END_OF_FILE:
+         case MyHTML_TAG__UNDEF:
+             return false;
+         case MyHTML_TAG__TEXT:
+             {
+                auto txt = myhtml_node_text(node, nullptr);
+                if (txt) {
+                    wc.cb.createText(txt);
+                }
+             }
+             return false;
+         case MyHTML_TAG__COMMENT:
+             {
+                auto txt = myhtml_node_text(node, nullptr);
+                if (txt) {
+                    wc.cb.createComment(txt);
+                }
+             }
+             return false;
+         default:
+            // continue
+            break;
         }
-    }
-    auto ns = myhtml_node_namespace(root);
-    auto attributes = flatten_attributes(wc, root);
-    wc.cb.createElement({ns, nullptr}, {signed_tag, tag_name}, attributes.ids, attributes.strings);
-}
 
-// Recursive pseudo-code for the following iterative implementation:
-//void transferSubTree(root) {
-//    if (!handlePreOrder(root)) {
-//        return;
-//    }
-//    for (child : children) {
-//        transferSubTree(child);
-//    }
-//    handlePostOrder(wc, root);
-//}
+        wc.cb.preOrderVisit();
+        return true;
+    }
+
+    void post(Node node) {
+        auto tag = myhtml_node_tag_id(node);
+        int32_t signed_tag = tag;  // TODO is it possible to exploit this potential overflow?
+        jstring tag_name = nullptr;
+        if (tag > MAX_TAG_INDEX) {
+            auto seenTagIndex = tag - MAX_TAG_INDEX - 1;
+            if (seenTagIndex < wc.seenTags.size()) {
+              if (wc.seenTags[seenTagIndex])  {
+                // already sent, nothing to do. Java side will know how to translate tag id.
+              } else {
+                wc.seenTags[seenTagIndex] = true;
+                tag_name = charArrayToJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
+              }
+            } else {
+                wc.seenTags.resize(seenTagIndex + 1, false);
+                wc.seenTags[seenTagIndex] = true;
+                tag_name = charArrayToJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
+            }
+        }
+        auto ns = myhtml_node_namespace(node);
+        auto attributes = flatten_attributes(wc, node);
+        wc.cb.createElement({ns, nullptr}, {signed_tag, tag_name}, attributes.ids, attributes.strings);
+    }
+
+};
 
 void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
-    using namespace std;
-    using node = myhtml_tree_node_t*;
-    if (!root) {
-        return; // nothing to do
-    }
-    vector<node> stackA;
-    vector<node> stackB;
-    stackA.push_back(root);
-    while (!stackA.empty()) {
-        auto n = stackA.back();
-        stackA.pop_back();
-
-        if (n) {
-            if (!handlePreOrder(wc, n)) {
-                continue;
-            }
-            stackB.push_back(n);
-
-            // Add special token to stackA which will trigger a post-order visit
-            stackA.push_back(nullptr);
-
-            // Add children to stackA (reverse order)
-            vector<node> children;
-            auto child = myhtml_node_child(n);
-            while (child) {
-                children.push_back(child);
-                child = myhtml_node_next(child);
-            }
-
-            copy(children.rbegin(), children.rend(), back_inserter(stackA));
-        } else {
-            handlePostOrder(wc, stackB.back());
-            stackB.pop_back();
-        }
-    }
+    TransferTreeVisitor visitor { wc };
+    traverse<MyHtmlAdapter, TransferTreeVisitor>(visitor, root);
 }
 
 void add_whitespace(myhtml_tag_id_t tag, std::stringstream & ss) {

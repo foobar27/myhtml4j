@@ -21,7 +21,7 @@ include(GenerateExportHeader)
 
 find_package(JNI REQUIRED)
 
-add_library(myhtml4jnative SHARED myjni.h myjni.cpp myhtml4jnative.h myhtml4jnative.cpp atoms.cpp atoms.h)
+add_library(myhtml4jnative SHARED myjni.h myjni.cpp myhtml4jnative.h myhtml4jnative.cpp atoms.cpp atoms.h traverser.h adapter.cpp adapter.h)
 add_dependencies(myhtml4jnative myhtmlbuild)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic") # TODO only for this library?
