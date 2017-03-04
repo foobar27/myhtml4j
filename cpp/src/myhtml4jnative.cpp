@@ -520,41 +520,45 @@ void add_whitespace(myhtml_tag_id_t tag, std::stringstream & ss) {
     }
 }
 
-void html2text(const Context & context, myhtml_tree_node_t *root, std::stringstream & ss) {
-    if (!root) {
-        return;
-    }
-    auto tag = myhtml_node_tag_id(root);
-    switch (tag) {
-    case MyHTML_TAG__END_OF_FILE:
-    case MyHTML_TAG__UNDEF:
-         return;
+struct ToTextVisitor {
+    std::stringstream ss;
 
-    case MyHTML_TAG_SCRIPT:
-    case MyHTML_TAG_STYLE:
-    case MyHTML_TAG_TEXTAREA:
-    case MyHTML_TAG_OPTION:
-    case MyHTML_TAG_SELECT:
-      ss << " ";
-      return;
+    bool pre(myhtml_tree_node_t* node) {
+        auto tag = myhtml_node_tag_id(node);
+        switch (tag) {
+        case MyHTML_TAG__END_OF_FILE:
+        case MyHTML_TAG__UNDEF:
+             return false;
 
-    case MyHTML_TAG__TEXT:
-         ss << myhtml_node_text(root, nullptr);
-         return;
-    case MyHTML_TAG__COMMENT:
-         return;
-    default:
-        // continue
-        break;
+        case MyHTML_TAG_SCRIPT:
+        case MyHTML_TAG_STYLE:
+        case MyHTML_TAG_TEXTAREA:
+        case MyHTML_TAG_OPTION:
+        case MyHTML_TAG_SELECT:
+          ss << " ";
+          return false;
+
+        case MyHTML_TAG__TEXT:
+             ss << myhtml_node_text(node, nullptr);
+             return false;
+        case MyHTML_TAG__COMMENT:
+             return false;
+        default:
+            add_whitespace(tag, ss);
+            return true;
+        }
     }
 
-    add_whitespace(tag, ss);
-    auto child = myhtml_node_child(root);
-    while (child != NULL) {
-        html2text(context, child, ss);
-        child = myhtml_node_next(child);
+    void post(myhtml_tree_node_t* node) {
+        auto tag = myhtml_node_tag_id(node);
+        add_whitespace(tag, ss);
     }
-    add_whitespace(tag, ss);
+};
+
+std::string html2text(const Context context, myhtml_tree_node_t* root) {
+    ToTextVisitor visitor;
+    traverse<MyHtmlAdapter, ToTextVisitor>(visitor, root);
+    return visitor.ss.str();
 }
 
 void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jclass, jlong c, jstring i, jobject callback) {
@@ -612,11 +616,10 @@ jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *e
     // parse html
     myhtml_parse(tree, MyHTML_ENCODING_UTF_8, input, inputLength);
 
-    std::stringstream ss;
-    html2text(*context, myhtml_tree_get_node_html(tree), ss);
+    auto text = html2text(*context, myhtml_tree_get_node_html(tree));
 
     // release resources
     myhtml_tree_destroy(tree);
     env->ReleaseStringUTFChars(i, input);
-    return stringToJni(env, ss.str());
+    return stringToJni(env, text);
 }
