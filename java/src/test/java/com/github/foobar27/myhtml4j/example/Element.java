@@ -68,9 +68,11 @@ public class Element extends Node {
             for (String value : as.getValue()) {
                 sb.append(" ");
                 sb.append(key);
-                sb.append("=\"");
-                sb.append(escaper.escape(value));
-                sb.append("\"");
+                if (value != null) {
+                    sb.append("=\"");
+                    sb.append(escaper.escape(value));
+                    sb.append("\"");
+                }
             }
         }
         sb.append(">");
