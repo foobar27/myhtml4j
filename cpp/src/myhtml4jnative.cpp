@@ -583,7 +583,7 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     }
 
     // parse html
-    myhtml_parse(tree, MyHTML_ENCODING_UTF_8, input, inputLength);
+    myhtml_parse(tree, MyENCODING_UTF_8, input, inputLength);
 
     WalkContext wContext {env, context->stringClass, cb, {env}, tree, {}};
 
@@ -614,7 +614,7 @@ jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *e
     }
 
     // parse html
-    myhtml_parse(tree, MyHTML_ENCODING_UTF_8, input, inputLength);
+    myhtml_parse(tree, MyENCODING_UTF_8, input, inputLength);
 
     auto text = html2text(*context, myhtml_tree_get_node_html(tree));
 

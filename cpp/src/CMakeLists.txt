@@ -48,7 +48,7 @@ set_target_properties(myhtml4jnative PROPERTIES
     VERSION ${myhtml4jnative_VERSION_AS_STRING}
     SOVERSION ${myhtml4jnative_VERSION_AS_STRING})
 
-set(MyHTML_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/../vendor/include)
+set(MyHTML_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/../vendor/include/include)
 set(MyHTML_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/../vendor/lib/libmyhtml_static.a)
 
 target_include_directories(myhtml4jnative
