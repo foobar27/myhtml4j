@@ -1,0 +1,38 @@
+* Introduction
+
+This is a Java Native Interface (JNI) wrapper of the HTML5 parsing library [[https://github.com/lexborisov/myhtml][myhtml]].
+
+* Getting started
+
+You can add the following maven dependency, or an equivalent gradle, ivy etc. dependency:
+
+#+BEGIN_EXAMPLE
+<!-- https://mvnrepository.com/artifact/com.github.foobar27/myhtml4j -->
+<dependency>
+    <groupId>com.github.foobar27</groupId>
+    <artifactId>myhtml4j</artifactId>
+    <version>0.1.5</version>
+</dependency>
+#+END_EXAMPLE
+
+Have a look at the [[https://github.com/foobar27/myhtml4j/tree/master/java/src/test/java/com/github/foobar27/myhtml4j][test cases]] to see how to use the library.
+
+* Build locally
+
+If you want to change myhtml4j you can build it locally:
+
+#+BEGIN_SRC sh
+git clone --recursive git@github.com:foobar27/myhtml4j.git
+cd myhtml4j/cpp
+mkdir -p build/release
+cd build/release
+cmake -DCMAKE_BUILD_TYPE=Release ../../
+make
+cd ../../../java
+./gradlew processResources
+./gradlew test 
+#+END_SRC
+
+* License
+
+See [[LICENSE]].
