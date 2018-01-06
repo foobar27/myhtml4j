@@ -48,7 +48,7 @@ dependencies {
 
 task createProperties(dependsOn: processResources) {
     doLast {
-        new File("$buildDir/resources/main/myhtml4j-version.properties").withWriter { w ->
+        new File("$projectDir/src/main/resources/myhtml4j-version.properties").withWriter { w ->
             Properties p = new Properties()
             p['myhtml4j-version'] = project.version.toString()
             p.store w, null
