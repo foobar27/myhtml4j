@@ -11,7 +11,7 @@ You can add the following maven dependency, or an equivalent gradle, ivy etc. de
 <dependency>
     <groupId>com.github.foobar27</groupId>
     <artifactId>myhtml4j</artifactId>
-    <version>0.1.5</version>
+    <version>0.1.7</version>
 </dependency>
 #+END_EXAMPLE
 
