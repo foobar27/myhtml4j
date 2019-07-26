@@ -100,7 +100,7 @@ public final class Myhtml4j {
      * Extracts the text representation of an html string.
      */
     public String html2textUTF8(String html) {
-        return CharMatcher.WHITESPACE.trimAndCollapseFrom(nativeObject.html2textUTF8(html), ' ');
+        return CharMatcher.whitespace().trimAndCollapseFrom(nativeObject.html2textUTF8(html), ' ');
     }
 
 }
