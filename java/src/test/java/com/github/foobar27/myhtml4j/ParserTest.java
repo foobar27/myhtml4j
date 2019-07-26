@@ -64,4 +64,9 @@ public class ParserTest {
         assertEquals(expected, parse(input).toString());
     }
 
+    @Test
+    public void test2() {
+        System.out.println(parse("<span class=\"hljs-keyword\">auto</span> <span class=\"hljs-keyword\">out</span> = <span class=\"hljs-string\">\"test string\"</span>;"));
+    }
+
 }
