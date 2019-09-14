@@ -17,20 +17,20 @@
 */
 package com.github.foobar27.myhtml4j;
 
-import com.github.foobar27.nativeinitializer.DefaultNamingScheme;
-import com.github.foobar27.nativeinitializer.NativeInitializer;
-import com.github.foobar27.nativeinitializer.NativeLoader;
-import com.github.foobar27.nativeinitializer.NativeLoaderFactory;
+import com.github.foobar27.nativeinitializer.*;
 import com.google.common.base.CharMatcher;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 public final class Myhtml4j {
 
     private static final String VERSION;
+
+    private static final Logger logger = Logger.getLogger(NativeLoaderFactory.class.getName());
 
     static {
         try {
@@ -64,7 +64,11 @@ public final class Myhtml4j {
      * Sets the NativeLoader
      */
     public static void setNativeLoader(NativeLoader loader) {
-        INITIALIZER.setNativeLoader(loader);
+        try {
+            INITIALIZER.setNativeLoader(loader);
+        } catch (NativeLoaderAlreadyInitializedException e) {
+            logger.info("Not reloading native library, already loaded");
+        }
     }
 
     public static Myhtml4j getInstance() {
