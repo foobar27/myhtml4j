@@ -19,12 +19,12 @@
 use strict;
 use warnings;
 
-my $tag_file = "vendor/myhtml/include/myhtml/tag_const.h";
+my $tag_file = "vendor/lexbor/source/lexbor/tag/const.h";
 my $attribute_key_file = "scripts/attributes.gperf";
 
 my $PACKAGE_NAME = "com.github.foobar27.myhtml4j.atoms";
 
-my @forbidden_tag_list = qw/_UNDEF _TEXT _COMMENT _DOCTYPE _END_OF_FILE FIRST_ENTRY LAST_ENTRY/;
+my @forbidden_tag_list = qw/_UNDEF _TEXT _EM_COMMENT _EM_DOCTYPE _END_OF_FILE FIRST_ENTRY LAST_ENTRY _DOCUMENT _LAST_ENTRY/;
 my $java_atom_directory = "../java/src/main/java/com/github/foobar27/myhtml4j/atoms";
 
 my $java_tag_class_name = "Tags";
@@ -126,7 +126,7 @@ sub load_tag_ids {
     my %tags;
     while (<$fh>) {
 	chomp;
-	if (/MyHTML_TAG_(\S*)\s*= 0x(.*)/) {
+	if (/LXB_TAG_(\S*)\s*= 0x(.*)/) {
 	    my $name = $1;
 	    my $id = $2;
 	    $id =~ s/,$//;
