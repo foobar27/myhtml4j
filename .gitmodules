@@ -1,6 +1,3 @@
-[submodule "cpp/vendor/myhtml"]
-	path = cpp/vendor/myhtml
-	url = https://github.com/lexborisov/myhtml.git
 [submodule "cpp/vendor/lexbor"]
 	path = cpp/vendor/lexbor
 	url = https://github.com/lexbor/lexbor.git
