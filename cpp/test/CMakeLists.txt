@@ -27,5 +27,5 @@ add_executable(jniTest jniTest.cpp)
 INCLUDE_DIRECTORIES(../src)
 
 target_compile_definitions(jniTest PUBLIC BOOST_TEST_DYN_LINK) 
-target_link_libraries(jniTest myhtml4jnative ${Boost_LIBRARIES})
+target_link_libraries(jniTest PRIVATE myhtml4jnative)
 add_test(jniTest jniTest)

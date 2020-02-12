@@ -17,11 +17,9 @@
 */
 #pragma once
 
-#include <vector>
+#include <stdexcept>
 
-#include "lexbor/html/interfaces/template_element.h"
-
-struct MyHtmlAdapter {
-    using node_type = lxb_dom_node_t*;
-    std::vector<node_type> getChildren(node_type node);
+class JavaException : public std::runtime_error {
+public:
+   JavaExceptionJavaException();
 };

@@ -15,13 +15,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
+#include <javaexception.h>
 
-#include <vector>
-
-#include "lexbor/html/interfaces/template_element.h"
-
-struct MyHtmlAdapter {
-    using node_type = lxb_dom_node_t*;
-    std::vector<node_type> getChildren(node_type node);
-};
+JavaExceptionJavaException(): std::runtime_error("java exception") {}

@@ -17,12 +17,12 @@
 */
 #include "adapter.h"
 
-std::vector<myhtml_tree_node_t*> MyHtmlAdapter::getChildren(myhtml_tree_node_t* node) {
-    std::vector<myhtml_tree_node_t*> children;
-    auto child = myhtml_node_child(node);
+std::vector<lxb_dom_node_t*> MyHtmlAdapter::getChildren(lxb_dom_node_t* node) {
+    std::vector<lxb_dom_node_t*> children;
+    auto child = node->first_child;
     while (child) {
         children.push_back(child);
-        child = myhtml_node_next(child);
+        child = child->next;
     }
     return children;
 }
