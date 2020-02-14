@@ -16,39 +16,32 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "atoms.h"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wwrite-strings"
-#include "attribute_keys.h"
-#pragma GCC diagnostic pop
 #include "myjni.h"
 #include <cstring>
+#include <unordered_map>
 
-int32_t attribute_key_to_id(const char* s, unsigned int len) {
-    auto result = AttributeKeyLookup::in_word_set(s, len);
-    if (result) {
-        return result->id;
-    }
-    return -1;
-}
-
-AttributeKey AttributeKeyCache::get(const char* c_name) {
-    using namespace std;
-    if (!c_name) {
-        c_name = "";
-    }
-    auto length = strlen(c_name);
-    auto id = attribute_key_to_id(c_name, length);
-    if (id >= 0) {
-        return {id, nullptr};
+template<typename K, typename L>
+K baseGet(BaseCache & cache, const char* c_name) {
+  using namespace std;
+  if (!c_name) {
+    c_name = "";
+  }
+  auto length = strlen(c_name);
+  auto lookup = L::in_word_set(c_name, length);
+  if (lookup) {
+    return {lookup->id, nullptr};
+  } else {
+    string name {c_name, length};
+    auto name_it = cache.m_cache.find(name);
+    if (name_it != cache.m_cache.end()) {
+      return {-1, name_it->second};
     } else {
-        string name {c_name, length};
-        auto name_it = m_cache.find(name);
-        if (name_it != m_cache.end()) {
-            return {id, name_it->second};
-        } else {
-            auto js = stringToJni(m_env, name);
-            m_cache[name] = js;
-            return {id, js};
-        }
+      auto js = stringToJni(cache.m_env, name);
+      cache.m_cache[name] = js;
+      return {-1, js};
     }
+  }
 }
+
+// Unfortunately gperf headers can not be included twice in the same file
+// So we create a C++ file for each: atoms_attributekeys.cpp and atoms_namespaces.cpp

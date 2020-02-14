@@ -21,7 +21,7 @@ include(GenerateExportHeader)
 
 find_package(JNI REQUIRED)
 
-add_library(myhtml4jnative SHARED myjni.h myjni.cpp myhtml4jnative.h myhtml4jnative.cpp atoms.cpp atoms.h traverser.h adapter.cpp adapter.h)
+add_library(myhtml4jnative SHARED myjni.h myjni.cpp myhtml4jnative.h myhtml4jnative.cpp atoms.cpp atoms_attributekeys.cpp atoms_namespaces.cpp atoms.h traverser.h adapter.cpp adapter.h)
 add_dependencies(myhtml4jnative lexborbuild)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic") # TODO only for this library?
@@ -29,6 +29,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic") # TODO 
 set(GENERATED_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 file(MAKE_DIRECTORY ${GENERATED_DIRECTORY})
+
+#
+# Generation of AttributeKeys (gperf)
+#
 set(AttributeKeysCpp ${GENERATED_DIRECTORY}/attribute_keys.h)
 set(AttributeKeysGperfFile ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/attributes.gperf)
 
@@ -44,6 +48,28 @@ add_custom_target(AttributeKeysGenerator DEPENDS ${AttributeKeysCpp}
 
 add_dependencies(myhtml4jnative AttributeKeysGenerator)
 
+#
+# Generation of Namespaces (gperf)
+#
+
+set(NamespacesCpp ${GENERATED_DIRECTORY}/namespaces.h)
+set(NamespacesGperfFile ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/namespaces.gperf)
+
+add_custom_command(
+    OUTPUT ${NamespacesCpp}
+    COMMAND gperf ${NamespacesGperfFile} > ${NamespacesCpp}
+    DEPENDS ${NamespacesGperfFile}
+    COMMENT "Transforming namespaces.gperf"
+)
+
+add_custom_target(NamespacesGenerator DEPENDS ${NamespacesCpp}
+                  COMMENT "Checking if re-generation of NamespacesCpp is required" )
+
+add_dependencies(myhtml4jnative NamespacesGenerator)
+
+#
+# Library
+#
 set_target_properties(myhtml4jnative PROPERTIES
     VERSION ${myhtml4jnative_VERSION_AS_STRING}
     SOVERSION ${myhtml4jnative_VERSION_AS_STRING})

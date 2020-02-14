@@ -64,8 +64,8 @@ struct JTag : IdJString {
 };
 
 struct JNamespace : IdJString {
-    JNamespace(int32_t id, jstring s)
-        : IdJString(id, s)
+    JNamespace(Namespace ns)
+      : IdJString(ns.id, ns.name)
     {}
 
 };
@@ -159,6 +159,7 @@ struct WalkContext {
     JClass stringClass;
     JavaCallbackObject & cb;
     AttributeKeyCache attributeKeyCache;
+    NamespaceCache namespaceCache;
     lxb_dom_node_t* tree;
     std::vector<bool> seenTags;
 };
@@ -187,11 +188,13 @@ JniNodeAttributes flatten_attributes(WalkContext & wc, lxb_dom_node_t* root) {
     std::vector<uint32_t> ids;
     std::vector<jstring> strings;
     while (attr) {
-        auto aNs = lxb_dom_attr_qualified_name(attr, nullptr); // TODO delete everything from : on
+      //        auto aNs = lxb_dom_attr_prefix(attr, nullptr);
+      int32_t aNs = 0; // TODO
+      //std::cerr << "qualified name: " << lxb_dom_attr_qualified_name(attr, nullptr) << std::endl;
         auto aKey = wc.attributeKeyCache.get((const char*) lxb_dom_attr_local_name(attr, nullptr));
         auto aValue = charArrayToJni(wc.env, (const char*) lxb_dom_attr_value(attr, nullptr));
 
-        ids.push_back(0 /*aNs*/); // TODO 
+        ids.push_back(aNs);
         ids.push_back(aKey.id);
         strings.push_back(aKey.name);
         strings.push_back(aValue);
@@ -293,10 +296,10 @@ struct TransferTreeVisitor {
                 tag_name = charArrayToJni(wc.env, (const char*) lxb_dom_element_tag_name(lxb_dom_interface_element(node), nullptr));
             }
         }
-	//        auto ns = myhtml_node_namespace(node); // TODO
-	int32_t ns = 0; // TODO remove
+	auto nsString = lxb_dom_element_prefix(lxb_dom_interface_element(node), nullptr);
+	auto ns = wc.namespaceCache.get((const char*) nsString);
         auto attributes = flatten_attributes(wc, node);
-        wc.cb.createElement({ns, nullptr}, {signed_tag, tag_name}, attributes.ids, attributes.strings);
+        wc.cb.createElement(ns, {signed_tag, tag_name}, attributes.ids, attributes.strings);
     }
 
 };
@@ -513,7 +516,7 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     
     auto tree = lxb_dom_interface_node(document)->first_child;
 
-    WalkContext wContext {env, context->stringClass, cb, {env}, tree, {}};
+    WalkContext wContext {env, context->stringClass, cb, {env}, {env}, tree, {}};
 
     transferDoctype(wContext, tree);
     transferSubTree(wContext, tree);

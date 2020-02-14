@@ -22,20 +22,37 @@
 #include <string>
 #include <jni.h>
 
+struct BaseCache {
+  BaseCache(JNIEnv* env)
+    : m_env(env)
+  {}
+  
+  JNIEnv* m_env;
+  std::unordered_map<std::string, jstring> m_cache;
+};
+
 struct AttributeKey {
     int32_t id;
     jstring name;
 };
 
-struct AttributeKeyCache {
+struct AttributeKeyCache : private BaseCache {
+  AttributeKeyCache(JNIEnv* env)
+    : BaseCache(env)
+  {}
+  
+  AttributeKey get(const char* name);
+};
 
-    AttributeKeyCache(JNIEnv* env)
-        : m_env(env)
-    {}
+struct Namespace {
+    int32_t id;
+    jstring name;
+};
 
-    AttributeKey get(const char* name);
-
-private:
-    JNIEnv* m_env;
-    std::unordered_map<std::string, jstring> m_cache;
+struct NamespaceCache : private BaseCache {
+  NamespaceCache(JNIEnv* env)
+    : BaseCache(env)
+  {}
+  
+  Namespace get(const char* name);
 };
