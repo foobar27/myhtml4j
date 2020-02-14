@@ -219,7 +219,7 @@ void transferDoctype(WalkContext & wc, lxb_dom_node_t* root) {
     if (!child) {
         return;
     }
-    auto tag = child->tag_id;
+    auto tag = lxb_dom_node_tag_id(child);
     if (tag == LXB_TAG__EM_DOCTYPE) {
         auto attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(child));
         std::vector<jstring> strings;
@@ -244,7 +244,7 @@ struct TransferTreeVisitor {
     WalkContext & wc;
 
     bool pre(Node node) {
-        auto tag = node->tag_id;
+        auto tag = lxb_dom_node_tag_id(node);
         switch (tag) {
          case LXB_TAG__END_OF_FILE:
          case LXB_TAG__UNDEF:
@@ -275,7 +275,7 @@ struct TransferTreeVisitor {
     }
 
     void post(Node node) {
-        auto tag = node->tag_id;
+        auto tag = lxb_dom_node_tag_id(node);
         int32_t signed_tag = tag;  // TODO is it possible to exploit this potential overflow?
         jstring tag_name = nullptr;
         if (tag > MAX_TAG_INDEX) {
@@ -285,12 +285,12 @@ struct TransferTreeVisitor {
                 // already sent, nothing to do. Java side will know how to translate tag id.
               } else {
                 wc.seenTags[seenTagIndex] = true;
-                tag_name = charArrayToJni(wc.env, (const char*) lxb_tag_name_by_id((lxb_tag_heap_t *)wc.tree->owner_document->tags, tag, nullptr));
+                tag_name = charArrayToJni(wc.env, (const char*) lxb_dom_element_tag_name(lxb_dom_interface_element(node), nullptr));
               }
             } else {
                 wc.seenTags.resize(seenTagIndex + 1, false);
                 wc.seenTags[seenTagIndex] = true;
-                tag_name = charArrayToJni(wc.env, (const char*) lxb_tag_name_by_id((lxb_tag_heap_t *)wc.tree, tag, nullptr));
+                tag_name = charArrayToJni(wc.env, (const char*) lxb_dom_element_tag_name(lxb_dom_interface_element(node), nullptr));
             }
         }
 	//        auto ns = myhtml_node_namespace(node); // TODO
@@ -452,7 +452,7 @@ struct ToTextVisitor {
     std::stringstream ss;
 
     bool pre(lxb_dom_node_t* node) {
-        auto tag = node->tag_id;
+        auto tag = lxb_dom_node_tag_id(node);
         switch (tag) {
         case LXB_TAG__END_OF_FILE:
         case LXB_TAG__UNDEF:
@@ -478,7 +478,7 @@ struct ToTextVisitor {
     }
 
     void post(lxb_dom_node_t* node) {
-        auto tag = node->tag_id;
+        auto tag = lxb_dom_node_tag_id(node);
         add_whitespace(tag, ss);
     }
 };
