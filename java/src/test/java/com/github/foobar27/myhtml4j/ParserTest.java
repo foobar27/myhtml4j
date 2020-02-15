@@ -35,18 +35,18 @@ public class ParserTest {
                 // html5 doctype
                 {
                         "<!DOCTYPE html><html><head><title>Hello world</title></head></body></html>",
-                        "Document[Optional[[html]],Element[html,html,{},[Element[html,head,{},[Element[html,title,{},[Text[Hello world]]]]], Element[html,body,{},[]]]]]"
+                        "Document[Optional[[html, , ]],Element[html,html,{},[Element[html,head,{},[Element[html,title,{},[Text[Hello world]]]]], Element[html,body,{},[]]]]]"
                 },
                 // html4 doctype
                 {
                         "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\" \"http://www.w3.org/TR/html4/frameset.dtd\"><html><head><title>Hello world</title></head></body></html>",
-                        "Document[Optional[[html, PUBLIC, -//W3C//DTD HTML 4.01 Frameset//EN, http://www.w3.org/TR/html4/frameset.dtd]],Element[html,html,{},[Element[html,head,{},[Element[html,title,{},[Text[Hello world]]]]], Element[html,body,{},[]]]]]"
+                        "Document[Optional[[html, -//W3C//DTD HTML 4.01 Frameset//EN, http://www.w3.org/TR/html4/frameset.dtd]],Element[html,html,{},[Element[html,head,{},[Element[html,title,{},[Text[Hello world]]]]], Element[html,body,{},[]]]]]"
                 },
                 // Reproduce segfault from myhtml issue 124
                 // https://github.com/lexborisov/myhtml/issues/124
                 {
                         "<!DOCTYPE html><html><body><template><div></div></form></template></body></html>",
-                        "Document[Optional[[html]],Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,template,{},[Element[html,div,{},[]]]]]]]]]"
+                        "Document[Optional[[html, , ]],Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,template,{},[Element[html,div,{},[]]]]]]]]]"
                 }
         });
     }
@@ -62,11 +62,6 @@ public class ParserTest {
     @Test
     public void test() {
         assertEquals(expected, parse(input).toString());
-    }
-
-    @Test
-    public void test2() {
-        System.out.println(parse("<span class=\"hljs-keyword\">auto</span> <span class=\"hljs-keyword\">out</span> = <span class=\"hljs-string\">\"test string\"</span>;"));
     }
 
 }

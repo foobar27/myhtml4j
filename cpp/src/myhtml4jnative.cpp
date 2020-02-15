@@ -27,6 +27,7 @@
 #include "lexbor/core/types.h"
 #include "lexbor/html/parser.h"
 #include "lexbor/tag/const.h"
+#include "lexbor/dom/interfaces/document_type.h"
 
 #include "myhtml4jnative.h"
 #include "myjni.h"
@@ -217,28 +218,19 @@ JniNodeAttributes flatten_attributes(WalkContext & wc, lxb_dom_node_t* root) {
     return {idArray, stringArray};
 }
 
-void transferDoctype(WalkContext & wc, lxb_dom_node_t* root) {
-    auto child = root->first_child;
-    if (!child) {
+void transferDoctype(WalkContext & wc, lxb_dom_document_t* document) {
+    if (!document) {
         return;
     }
-    auto tag = lxb_dom_node_tag_id(child);
-    if (tag == LXB_TAG__EM_DOCTYPE) {
-        auto attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(child));
-        std::vector<jstring> strings;
-        while (attr) {
-            auto key = lxb_dom_attr_local_name(attr, nullptr);
-            auto value = lxb_dom_attr_value(attr, nullptr);
-            if (key) {
-	        strings.push_back(wc.env->NewStringUTF((const char*)key));
-            }
-            if (value) {
-  	        strings.push_back(wc.env->NewStringUTF((const char*)value));
-            }
-            attr = lxb_dom_element_next_attribute(attr);
-        }
-        wc.cb.setDoctype(stringArrayToObjectArray(wc, strings));
+    auto doctype = document->doctype;
+    if (!doctype) {
+        return;
     }
+    std::vector<jstring> strings;
+    strings.push_back(wc.env->NewStringUTF((const char*) lxb_dom_document_type_name(doctype, nullptr)));
+    strings.push_back(wc.env->NewStringUTF((const char*) lxb_dom_document_type_public_id(doctype, nullptr)));
+    strings.push_back(wc.env->NewStringUTF((const char*) lxb_dom_document_type_system_id(doctype, nullptr)));
+    wc.cb.setDoctype(stringArrayToObjectArray(wc, strings));
 }
 
 struct TransferTreeVisitor {
@@ -251,7 +243,10 @@ struct TransferTreeVisitor {
         switch (tag) {
          case LXB_TAG__END_OF_FILE:
          case LXB_TAG__UNDEF:
-             return false;
+ 	 case LXB_TAG__EM_DOCTYPE:
+	   return false;
+ 	 case LXB_TAG__DOCUMENT:
+	   return true; // post-stage will be skipped
          case LXB_TAG__TEXT:
              {
 	       auto txt = lxb_dom_node_text_content(node, nullptr);
@@ -272,15 +267,20 @@ struct TransferTreeVisitor {
             // continue
             break;
         }
-
         wc.cb.preOrderVisit();
         return true;
     }
 
     void post(Node node) {
         auto tag = lxb_dom_node_tag_id(node);
+	if (tag == LXB_TAG__DOCUMENT) {
+	  return; // skip (was also skipped during pre-stage)
+	}
         int32_t signed_tag = tag;  // TODO is it possible to exploit this potential overflow?
         jstring tag_name = nullptr;
+	// The first MAX_TAG_INDEX tag names are predefined, in lexbor as well as in the java counterpart.
+	// If we encounter such a tag, we don't need to send any string.
+	// If we encounter a tag outside of this range, we will send the tag to the java side.
         if (tag > MAX_TAG_INDEX) {
             auto seenTagIndex = tag - MAX_TAG_INDEX - 1;
             if (seenTagIndex < wc.seenTags.size()) {
@@ -297,7 +297,9 @@ struct TransferTreeVisitor {
             }
         }
 	auto nsString = lxb_dom_element_prefix(lxb_dom_interface_element(node), nullptr);
-	auto ns = wc.namespaceCache.get((const char*) nsString);
+	auto ns = nsString
+	  ? wc.namespaceCache.get((const char*) nsString)
+	  : wc.namespaceCache.get("html"); // TODO optimize // TODO is this even correct?
         auto attributes = flatten_attributes(wc, node);
         wc.cb.createElement(ns, {signed_tag, tag_name}, attributes.ids, attributes.strings);
     }
@@ -513,12 +515,12 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
         cb.internalError();
         return;      
     }
-    
-    auto tree = lxb_dom_interface_node(document)->first_child;
+
+    auto tree = lxb_dom_interface_node(document);
 
     WalkContext wContext {env, context->stringClass, cb, {env}, {env}, tree, {}};
 
-    transferDoctype(wContext, tree);
+    transferDoctype(wContext, lxb_dom_interface_document(document));
     transferSubTree(wContext, tree);
 
     // release resources
@@ -532,10 +534,9 @@ jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *e
     lxb_status_t status;
     size_t inputLength = strlen(input);
     // TODO how do we know it's UTF8?
-    // init tree
     auto document = lxb_html_document_create();
     if (!document) {
-        //std::cerr << "myhtml_tree_create failed" << std::endl;
+        std::cerr << "lxb_html_document_create() failed" << std::endl;
         return nullptr;
     }
 
