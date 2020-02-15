@@ -504,6 +504,7 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     auto document = lxb_html_document_create();
     if (!document) {
         std::cerr << "lxb_html_document_create() failed" << std::endl;
+        env->ReleaseStringUTFChars(i, input);
         cb.internalError();
         return;
     }
@@ -512,6 +513,8 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     status = lxb_html_document_parse(document, (const lxb_char_t*) input, inputLength);
     if (status != LXB_STATUS_OK) {
         std::cerr << "lxb_html_document_parse() failed" << std::endl;
+        lxb_html_document_destroy(document);
+        env->ReleaseStringUTFChars(i, input);
         cb.internalError();
         return;      
     }
@@ -537,12 +540,15 @@ jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *e
     auto document = lxb_html_document_create();
     if (!document) {
         std::cerr << "lxb_html_document_create() failed" << std::endl;
+        env->ReleaseStringUTFChars(i, input);
         return nullptr;
     }
 
     status = lxb_html_document_parse(document, (const lxb_char_t*) input, inputLength);
     if (status != LXB_STATUS_OK) {
         std::cerr << "lxb_html_document_parse() failed" << std::endl;
+        lxb_html_document_destroy(document);
+        env->ReleaseStringUTFChars(i, input);
         return nullptr; // TODO is this the correct way to handle the error?
     }
 
