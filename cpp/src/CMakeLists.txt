@@ -21,14 +21,18 @@ include(GenerateExportHeader)
 
 find_package(JNI REQUIRED)
 
-add_library(myhtml4jnative SHARED myjni.h myjni.cpp myhtml4jnative.h myhtml4jnative.cpp atoms.cpp atoms.h traverser.h adapter.cpp adapter.h)
-add_dependencies(myhtml4jnative myhtmlbuild)
+add_library(myhtml4jnative SHARED myjni.h myjni.cpp myhtml4jnative.h myhtml4jnative.cpp atoms.cpp atoms_attributekeys.cpp atoms_namespaces.cpp atoms.h traverser.h adapter.cpp adapter.h)
+add_dependencies(myhtml4jnative lexborbuild)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic") # TODO only for this library?
 
 set(GENERATED_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 file(MAKE_DIRECTORY ${GENERATED_DIRECTORY})
+
+#
+# Generation of AttributeKeys (gperf)
+#
 set(AttributeKeysCpp ${GENERATED_DIRECTORY}/attribute_keys.h)
 set(AttributeKeysGperfFile ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/attributes.gperf)
 
@@ -44,16 +48,39 @@ add_custom_target(AttributeKeysGenerator DEPENDS ${AttributeKeysCpp}
 
 add_dependencies(myhtml4jnative AttributeKeysGenerator)
 
+#
+# Generation of Namespaces (gperf)
+#
+
+set(NamespacesCpp ${GENERATED_DIRECTORY}/namespaces.h)
+set(NamespacesGperfFile ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/namespaces.gperf)
+
+add_custom_command(
+    OUTPUT ${NamespacesCpp}
+    COMMAND gperf ${NamespacesGperfFile} > ${NamespacesCpp}
+    DEPENDS ${NamespacesGperfFile}
+    COMMENT "Transforming namespaces.gperf"
+)
+
+add_custom_target(NamespacesGenerator DEPENDS ${NamespacesCpp}
+                  COMMENT "Checking if re-generation of NamespacesCpp is required" )
+
+add_dependencies(myhtml4jnative NamespacesGenerator)
+
+#
+# Library
+#
 set_target_properties(myhtml4jnative PROPERTIES
     VERSION ${myhtml4jnative_VERSION_AS_STRING}
     SOVERSION ${myhtml4jnative_VERSION_AS_STRING})
 
-set(MyHTML_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/../vendor/include/include)
-set(MyHTML_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/../vendor/lib/libmyhtml_static.a)
+set(LEXBOR_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/../vendor/include)
+set(LEXBOR_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/../vendor/lib/liblexbor_static.a)
 
 target_include_directories(myhtml4jnative
-    PUBLIC ${JNI_INCLUDE_DIRS} ${MyHTML_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/generated)
-target_link_libraries(myhtml4jnative PUBLIC ${MyHTML_LIBRARY})
+    PUBLIC ${JNI_INCLUDE_DIRS} ${LEXBOR_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/generated)
+target_link_libraries(myhtml4jnative PUBLIC ${LEXBOR_LIBRARY}
+  -static-libgcc -static-libstdc++)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../java/src/main/resources/lib)
 add_custom_command(TARGET myhtml4jnative

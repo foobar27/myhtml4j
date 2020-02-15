@@ -1,0 +1,13 @@
+%struct-type
+%language=C++
+%define class-name NamespaceLookup
+%readonly-tables
+%ignore-case
+struct NamespaceId { char *name; int32_t id; };
+%%
+html,1
+mathml,2
+svg,3
+xlink,4
+xml,5
+xmlns,6

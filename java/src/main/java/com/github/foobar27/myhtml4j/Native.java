@@ -57,7 +57,7 @@ class Native {
         private final Visitor delegate;
         boolean internalErrorOccurred;
         private final ArrayList<String> knownTagNames = new ArrayList<>();
-        private static final int MAX_KNOWN_TAG_ID = 251;
+        private static final int MAX_KNOWN_TAG_ID = 194;
 
         NativeCallBack(Visitor delegate) {
             if (delegate == null) {

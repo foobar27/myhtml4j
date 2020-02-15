@@ -39,7 +39,7 @@ public final class Tag {
             }
             return result;
         } else {
-            return new Tag(id, name);
+            return new Tag(id, name.toLowerCase());
         }
     }
 

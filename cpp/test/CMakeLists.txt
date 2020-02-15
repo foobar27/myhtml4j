@@ -16,7 +16,7 @@
 
 enable_testing()
 
-find_package(Boost REQUIRED COMPONENTS system filesystem unit_test_framework)
+find_package(Boost CONFIG REQUIRED COMPONENTS system filesystem unit_test_framework)
 
 set(CMAKE_CXX_STANDARD 14)
 #set (CMAKE_CXX_FLAGS "--std=c++14 ${CMAKE_CXX_FLAGS}")
@@ -27,5 +27,5 @@ add_executable(jniTest jniTest.cpp)
 INCLUDE_DIRECTORIES(../src)
 
 target_compile_definitions(jniTest PUBLIC BOOST_TEST_DYN_LINK) 
-target_link_libraries(jniTest myhtml4jnative ${Boost_LIBRARIES})
+target_link_libraries(jniTest myhtml4jnative Boost::filesystem Boost::unit_test_framework)
 add_test(jniTest jniTest)

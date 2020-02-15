@@ -17,12 +17,19 @@
 */
 #include "adapter.h"
 
-std::vector<myhtml_tree_node_t*> MyHtmlAdapter::getChildren(myhtml_tree_node_t* node) {
-    std::vector<myhtml_tree_node_t*> children;
-    auto child = myhtml_node_child(node);
-    while (child) {
-        children.push_back(child);
-        child = myhtml_node_next(child);
+std::vector<lxb_dom_node_t*> MyHtmlAdapter::getChildren(lxb_dom_node_t* node) {
+    std::vector<lxb_dom_node_t*> children;
+    if (node->local_name == LXB_TAG_TEMPLATE) {
+      auto temp = lxb_html_interface_template(node);
+      if (temp->content) {
+	return getChildren(&temp->content->node);
+      }
+    } else {
+        auto child = node->first_child;
+        while (child) {
+	    children.push_back(child);
+	    child = child->next;
+	}
     }
     return children;
 }

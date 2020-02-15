@@ -23,7 +23,11 @@
 #include <string>
 #include <vector>
 
-#include "myhtml/api.h"
+#include "lexbor/core/base.h"
+#include "lexbor/core/types.h"
+#include "lexbor/html/parser.h"
+#include "lexbor/tag/const.h"
+#include "lexbor/dom/interfaces/document_type.h"
 
 #include "myhtml4jnative.h"
 #include "myjni.h"
@@ -31,7 +35,7 @@
 #include "traverser.h"
 #include "adapter.h"
 
-#define MAX_TAG_INDEX 251 // TODO magic value, where can we get it from?
+#define MAX_TAG_INDEX 194 // see const.h
 
 struct IdJString {
 
@@ -61,8 +65,8 @@ struct JTag : IdJString {
 };
 
 struct JNamespace : IdJString {
-    JNamespace(int32_t id, jstring s)
-        : IdJString(id, s)
+    JNamespace(Namespace ns)
+      : IdJString(ns.id, ns.name)
     {}
 
 };
@@ -129,30 +133,17 @@ private:
 
 struct Context {
     JavaCallbackClass m_callbackClass;
-    myhtml_t* m_myhtml;
     JClass stringClass;
 
-    Context(JNIEnv *env, jclass callbackClass, myhtml_t* myhtml)
+    Context(JNIEnv *env, jclass callbackClass)
         : m_callbackClass(env, callbackClass)
-        , m_myhtml(myhtml)
         , stringClass(JClass::load(env, "java/lang/String").globalRef(env))
     {}
 
 };
 
 jlong JNICALL Java_com_github_foobar27_myhtml4j_Native_newContext(JNIEnv *env, jclass, jclass callbackClass) {
-    auto myhtml = myhtml_create();
-    if (!myhtml) {
-        std::cerr << "myhtml_create failed" << std::endl;
-        return 0;
-    }
-    auto res = myhtml_init(myhtml, MyHTML_OPTIONS_DEFAULT, 1, 0);
-    if (MYHTML_FAILED(res)) {
-        std::cerr << "myhtml_init failed with " << res << std::endl;
-        return 0;
-    }
-
-    return (jlong) new Context(env, callbackClass, myhtml);
+    return (jlong) new Context(env, callbackClass);
 }
 
 void JNICALL Java_com_github_foobar27_myhtml4j_Native_deleteContext(JNIEnv *env, jclass, jlong context) {
@@ -169,8 +160,9 @@ struct WalkContext {
     JClass stringClass;
     JavaCallbackObject & cb;
     AttributeKeyCache attributeKeyCache;
-    myhtml_tree_t* tree;
-    std::vector<bool> seenTags;
+    NamespaceCache namespaceCache;
+    lxb_dom_node_t* tree;
+    std::unordered_map<lxb_tag_id_t, int32_t> seenTags;
 };
 
 jobjectArray stringArrayToObjectArray(WalkContext & wc, const std::vector<jstring> & strings) {
@@ -189,24 +181,28 @@ jobjectArray stringArrayToObjectArray(WalkContext & wc, const std::vector<jstrin
     return stringArray;
 }
 
-JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root) {
-    myhtml_tree_attr_t* attr = myhtml_node_attribute_first(root);
+JniNodeAttributes flatten_attributes(WalkContext & wc, lxb_dom_node_t* root) {
+    lxb_dom_attr* attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(root));
     if (!attr) {
         return {nullptr, nullptr};
     }
     std::vector<uint32_t> ids;
     std::vector<jstring> strings;
     while (attr) {
-        auto aNs = myhtml_attribute_namespace(attr);
-        auto aKey = wc.attributeKeyCache.get(myhtml_attribute_key(attr, nullptr));
-        auto aValue = charArrayToJni(wc.env, myhtml_attribute_value(attr, nullptr));
+      //        auto aNs = lxb_dom_attr_prefix(attr, nullptr);
+      int32_t aNs = 0; // TODO
+      //std::cerr << "qualified name: " << lxb_dom_attr_qualified_name(attr, nullptr) << std::endl;
+        size_t aKeyLength {};
+        auto aKeyPtr = (const char*) lxb_dom_attr_local_name(attr, &aKeyLength);
+        auto aKey = wc.attributeKeyCache.get(aKeyPtr, aKeyLength);
+        auto aValue = charArrayToJni(wc.env, (const char*) lxb_dom_attr_value(attr, nullptr));
 
         ids.push_back(aNs);
         ids.push_back(aKey.id);
         strings.push_back(aKey.name);
         strings.push_back(aValue);
 
-        attr = myhtml_attribute_next(attr);
+        attr = lxb_dom_element_next_attribute(attr);
     }
 
     // Convert ids vector to JNI array
@@ -224,54 +220,48 @@ JniNodeAttributes flatten_attributes(WalkContext & wc, myhtml_tree_node_t* root)
     return {idArray, stringArray};
 }
 
-void transferDoctype(WalkContext & wc, myhtml_tree_node_t* root) {
-    auto child = myhtml_node_child(root);
-    if (!child) {
+void transferDoctype(WalkContext & wc, lxb_dom_document_t* document) {
+    if (!document) {
         return;
     }
-    auto tag = myhtml_node_tag_id(child);
-    if (tag == MyHTML_TAG__DOCTYPE) {
-        myhtml_tree_attr_t* attr = myhtml_node_attribute_first(child);
-        std::vector<jstring> strings;
-        while (attr) {
-            auto key = myhtml_attribute_key(attr, nullptr);
-            auto value = myhtml_attribute_value(attr, nullptr);
-            if (key) {
-                strings.push_back(wc.env->NewStringUTF(key));
-            }
-            if (value) {
-                strings.push_back(wc.env->NewStringUTF(value));
-            }
-            attr = myhtml_attribute_next(attr);
-        }
-        wc.cb.setDoctype(stringArrayToObjectArray(wc, strings));
+    auto doctype = document->doctype;
+    if (!doctype) {
+        return;
     }
+    std::vector<jstring> strings;
+    strings.push_back(wc.env->NewStringUTF((const char*) lxb_dom_document_type_name(doctype, nullptr)));
+    strings.push_back(wc.env->NewStringUTF((const char*) lxb_dom_document_type_public_id(doctype, nullptr)));
+    strings.push_back(wc.env->NewStringUTF((const char*) lxb_dom_document_type_system_id(doctype, nullptr)));
+    wc.cb.setDoctype(stringArrayToObjectArray(wc, strings));
 }
 
 struct TransferTreeVisitor {
-    using Node = myhtml_tree_node_t*;
+    using Node = lxb_dom_node_t*;
 
     WalkContext & wc;
 
     bool pre(Node node) {
-        auto tag = myhtml_node_tag_id(node);
+        auto tag = lxb_dom_node_tag_id(node);
         switch (tag) {
-         case MyHTML_TAG__END_OF_FILE:
-         case MyHTML_TAG__UNDEF:
-             return false;
-         case MyHTML_TAG__TEXT:
+         case LXB_TAG__END_OF_FILE:
+         case LXB_TAG__UNDEF:
+ 	 case LXB_TAG__EM_DOCTYPE:
+	   return false;
+ 	 case LXB_TAG__DOCUMENT:
+	   return true; // post-stage will be skipped
+         case LXB_TAG__TEXT:
              {
-                auto txt = myhtml_node_text(node, nullptr);
+	       auto txt = lxb_dom_node_text_content(node, nullptr);
                 if (txt) {
-                    wc.cb.createText(txt);
+  		    wc.cb.createText((const char*) txt);
                 }
              }
              return false;
-         case MyHTML_TAG__COMMENT:
+         case LXB_TAG__EM_COMMENT:
              {
-                auto txt = myhtml_node_text(node, nullptr);
+                auto txt = lxb_dom_node_text_content(node, nullptr);
                 if (txt) {
-                    wc.cb.createComment(txt);
+		    wc.cb.createComment((const char*) txt);
                 }
              }
              return false;
@@ -279,242 +269,187 @@ struct TransferTreeVisitor {
             // continue
             break;
         }
-
         wc.cb.preOrderVisit();
         return true;
     }
 
     void post(Node node) {
-        auto tag = myhtml_node_tag_id(node);
-        int32_t signed_tag = tag;  // TODO is it possible to exploit this potential overflow?
+        auto tag = lxb_dom_node_tag_id(node);
+	if (tag == LXB_TAG__DOCUMENT) {
+	  return; // skip (was also skipped during pre-stage)
+	}
+        int32_t signed_tag = tag;
         jstring tag_name = nullptr;
+	// The first MAX_TAG_INDEX tag names are predefined, in lexbor as well as in the java counterpart.
+	// If we encounter such a tag, we don't need to send any string.
+	// If we encounter a tag outside of this range, we will translate to an incremental tag id,
+	// and send it to the java side. The second time we will skip the string, because the java side
+	// is able to do the lookup itself.
         if (tag > MAX_TAG_INDEX) {
-            auto seenTagIndex = tag - MAX_TAG_INDEX - 1;
-            if (seenTagIndex < wc.seenTags.size()) {
-              if (wc.seenTags[seenTagIndex])  {
-                // already sent, nothing to do. Java side will know how to translate tag id.
-              } else {
-                wc.seenTags[seenTagIndex] = true;
-                tag_name = charArrayToJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
-              }
-            } else {
-                wc.seenTags.resize(seenTagIndex + 1, false);
-                wc.seenTags[seenTagIndex] = true;
-                tag_name = charArrayToJni(wc.env, myhtml_tag_name_by_id(wc.tree, tag, nullptr));
-            }
+	    auto it = wc.seenTags.find(tag);
+	    if (it != wc.seenTags.end()) {
+	      // We have already seen this tag, no need to send the string.
+	      signed_tag = it->second;
+	    } else {
+	      // We haven't seen this tag yet.
+	      signed_tag = wc.seenTags.size() + MAX_TAG_INDEX + 1;
+	      wc.seenTags[tag] = signed_tag;
+	      tag_name = charArrayToJni(wc.env, (const char*) lxb_dom_element_tag_name(lxb_dom_interface_element(node), nullptr));
+	    }
         }
-        auto ns = myhtml_node_namespace(node);
+	size_t nsLength {};
+	auto nsPtr = (const char*) lxb_dom_element_prefix(lxb_dom_interface_element(node), &nsLength);
+	auto ns = nsPtr
+	  ? wc.namespaceCache.get(nsPtr, nsLength)
+	  : wc.namespaceCache.get("html", 4); // TODO is this even correct? or should it be inherited?
         auto attributes = flatten_attributes(wc, node);
-        wc.cb.createElement({ns, nullptr}, {signed_tag, tag_name}, attributes.ids, attributes.strings);
+        wc.cb.createElement(ns, {signed_tag, tag_name}, attributes.ids, attributes.strings);
     }
 
 };
 
-void transferSubTree(WalkContext & wc, myhtml_tree_node_t* root) {
+void transferSubTree(WalkContext & wc, lxb_dom_node_t* root) {
     TransferTreeVisitor visitor { wc };
     traverse<MyHtmlAdapter, TransferTreeVisitor>(visitor, root);
 }
 
-void add_whitespace(myhtml_tag_id_t tag, std::stringstream & ss) {
+void add_whitespace(unsigned int tag, std::stringstream & ss) {
     switch (tag) {
     // treat the following as whitespace: http://www.javased.com/?source_dir=ihtika/Sources/Bundles/JerichoBundle/src/main/java/net/htmlparser/jericho/TextExtractor.java
-    case MyHTML_TAG_BR:
-    case MyHTML_TAG_ADDRESS:
-    case MyHTML_TAG_ANNOTATION_XML:
-    case MyHTML_TAG_AREA:
-    case MyHTML_TAG_ARTICLE:
-    case MyHTML_TAG_ASIDE:
-    case MyHTML_TAG_AUDIO:
-    case MyHTML_TAG_BASE:
-    case MyHTML_TAG_BGSOUND:
-    case MyHTML_TAG_BLINK:
-    case MyHTML_TAG_BLOCKQUOTE:
-    case MyHTML_TAG_BODY:
-    case MyHTML_TAG_CANVAS:
-    case MyHTML_TAG_CAPTION:
-    case MyHTML_TAG_CENTER:
-    case MyHTML_TAG_COL:
-    case MyHTML_TAG_COLGROUP:
-    case MyHTML_TAG_COMMAND:
-    case MyHTML_TAG_COMMENT:
-    case MyHTML_TAG_DATALIST:
-    case MyHTML_TAG_DD:
-    case MyHTML_TAG_DETAILS:
-    case MyHTML_TAG_DIALOG:
-    case MyHTML_TAG_DIR:
-    case MyHTML_TAG_DIV:
-    case MyHTML_TAG_DL:
-    case MyHTML_TAG_DT:
-    case MyHTML_TAG_EMBED:
-    case MyHTML_TAG_FIELDSET:
-    case MyHTML_TAG_FIGCAPTION:
-    case MyHTML_TAG_FIGURE:
-    case MyHTML_TAG_FOOTER:
-    case MyHTML_TAG_FORM:
-    case MyHTML_TAG_FRAME:
-    case MyHTML_TAG_FRAMESET:
-    case MyHTML_TAG_H1:
-    case MyHTML_TAG_H2:
-    case MyHTML_TAG_H3:
-    case MyHTML_TAG_H4:
-    case MyHTML_TAG_H5:
-    case MyHTML_TAG_H6:
-    case MyHTML_TAG_HEAD:
-    case MyHTML_TAG_HEADER:
-    case MyHTML_TAG_HGROUP:
-    case MyHTML_TAG_HR:
-    case MyHTML_TAG_HTML:
-    case MyHTML_TAG_IMAGE:
-    case MyHTML_TAG_ISINDEX:
-    case MyHTML_TAG_LEGEND:
-    case MyHTML_TAG_LI:
-    case MyHTML_TAG_LINK:
-    case MyHTML_TAG_LISTING:
-    case MyHTML_TAG_MAIN:
-    case MyHTML_TAG_MARQUEE:
-    case MyHTML_TAG_MENU:
-    case MyHTML_TAG_MENUITEM:
-    case MyHTML_TAG_META:
-    case MyHTML_TAG_MTEXT:
-    case MyHTML_TAG_NAV:
-    case MyHTML_TAG_NOBR:
-    case MyHTML_TAG_NOEMBED:
-    case MyHTML_TAG_NOFRAMES:
-    case MyHTML_TAG_NOSCRIPT:
-    case MyHTML_TAG_OL:
-    case MyHTML_TAG_OPTGROUP:
-    case MyHTML_TAG_OPTION:
-    case MyHTML_TAG_P:
-    case MyHTML_TAG_PARAM:
-    case MyHTML_TAG_PLAINTEXT:
-    case MyHTML_TAG_PRE:
-    case MyHTML_TAG_RB:
-    case MyHTML_TAG_RTC:
-    case MyHTML_TAG_SECTION:
-    case MyHTML_TAG_SOURCE:
-    case MyHTML_TAG_STYLE:
-    case MyHTML_TAG_SUMMARY:
-    case MyHTML_TAG_SVG:
-    case MyHTML_TAG_TABLE:
-    case MyHTML_TAG_TBODY:
-    case MyHTML_TAG_TD:
-    case MyHTML_TAG_TEMPLATE:
-    case MyHTML_TAG_TFOOT:
-    case MyHTML_TAG_TH:
-    case MyHTML_TAG_THEAD:
-    case MyHTML_TAG_TITLE:
-    case MyHTML_TAG_TR:
-    case MyHTML_TAG_TRACK:
-    case MyHTML_TAG_UL:
-    case MyHTML_TAG_VIDEO:
-    case MyHTML_TAG_XMP:
-    case MyHTML_TAG_ALTGLYPH:
-    case MyHTML_TAG_ALTGLYPHDEF:
-    case MyHTML_TAG_ALTGLYPHITEM:
-    case MyHTML_TAG_ANIMATE:
-    case MyHTML_TAG_ANIMATECOLOR:
-    case MyHTML_TAG_ANIMATEMOTION:
-    case MyHTML_TAG_ANIMATETRANSFORM:
-    case MyHTML_TAG_CIRCLE:
-    case MyHTML_TAG_CLIPPATH:
-    case MyHTML_TAG_COLOR_PROFILE:
-    case MyHTML_TAG_CURSOR:
-    case MyHTML_TAG_DEFS:
-    case MyHTML_TAG_DESC:
-    case MyHTML_TAG_ELLIPSE:
-    case MyHTML_TAG_FEBLEND:
-    case MyHTML_TAG_FECOLORMATRIX:
-    case MyHTML_TAG_FECOMPONENTTRANSFER:
-    case MyHTML_TAG_FECOMPOSITE:
-    case MyHTML_TAG_FECONVOLVEMATRIX:
-    case MyHTML_TAG_FEDIFFUSELIGHTING:
-    case MyHTML_TAG_FEDISPLACEMENTMAP:
-    case MyHTML_TAG_FEDISTANTLIGHT:
-    case MyHTML_TAG_FEDROPSHADOW:
-    case MyHTML_TAG_FEFLOOD:
-    case MyHTML_TAG_FEFUNCA:
-    case MyHTML_TAG_FEFUNCB:
-    case MyHTML_TAG_FEFUNCG:
-    case MyHTML_TAG_FEFUNCR:
-    case MyHTML_TAG_FEGAUSSIANBLUR:
-    case MyHTML_TAG_FEIMAGE:
-    case MyHTML_TAG_FEMERGE:
-    case MyHTML_TAG_FEMERGENODE:
-    case MyHTML_TAG_FEMORPHOLOGY:
-    case MyHTML_TAG_FEOFFSET:
-    case MyHTML_TAG_FEPOINTLIGHT:
-    case MyHTML_TAG_FESPECULARLIGHTING:
-    case MyHTML_TAG_FESPOTLIGHT:
-    case MyHTML_TAG_FETILE:
-    case MyHTML_TAG_FETURBULENCE:
-    case MyHTML_TAG_FILTER:
-    case MyHTML_TAG_FONT_FACE:
-    case MyHTML_TAG_FONT_FACE_FORMAT:
-    case MyHTML_TAG_FONT_FACE_NAME:
-    case MyHTML_TAG_FONT_FACE_SRC:
-    case MyHTML_TAG_FONT_FACE_URI:
-    case MyHTML_TAG_FOREIGNOBJECT:
-    case MyHTML_TAG_G:
-    case MyHTML_TAG_GLYPH:
-    case MyHTML_TAG_GLYPHREF:
-    case MyHTML_TAG_HKERN:
-    case MyHTML_TAG_LINE:
-    case MyHTML_TAG_LINEARGRADIENT:
-    case MyHTML_TAG_MARKER:
-    case MyHTML_TAG_MASK:
-    case MyHTML_TAG_METADATA:
-    case MyHTML_TAG_MISSING_GLYPH:
-    case MyHTML_TAG_MPATH:
-    case MyHTML_TAG_PATH:
-    case MyHTML_TAG_PATTERN:
-    case MyHTML_TAG_POLYGON:
-    case MyHTML_TAG_POLYLINE:
-    case MyHTML_TAG_RADIALGRADIENT:
-    case MyHTML_TAG_RECT:
-    case MyHTML_TAG_SET:
-    case MyHTML_TAG_STOP:
-    case MyHTML_TAG_SWITCH:
-    case MyHTML_TAG_SYMBOL:
-    case MyHTML_TAG_TEXT:
-    case MyHTML_TAG_TEXTPATH:
-    case MyHTML_TAG_TREF:
-    case MyHTML_TAG_TSPAN:
-    case MyHTML_TAG_USE:
-    case MyHTML_TAG_VIEW:
-    case MyHTML_TAG_VKERN:
-    case MyHTML_TAG_MATH:
-    case MyHTML_TAG_MACTION:
-    case MyHTML_TAG_MALIGNGROUP:
-    case MyHTML_TAG_MALIGNMARK:
-    case MyHTML_TAG_MENCLOSE:
-    case MyHTML_TAG_MERROR:
-    case MyHTML_TAG_MFENCED:
-    case MyHTML_TAG_MFRAC:
-    case MyHTML_TAG_MGLYPH:
-    case MyHTML_TAG_MI:
-    case MyHTML_TAG_MLABELEDTR:
-    case MyHTML_TAG_MLONGDIV:
-    case MyHTML_TAG_MMULTISCRIPTS:
-    case MyHTML_TAG_MN:
-    case MyHTML_TAG_MO:
-    case MyHTML_TAG_MOVER:
-    case MyHTML_TAG_MPADDED:
-    case MyHTML_TAG_MPHANTOM:
-    case MyHTML_TAG_MROOT:
-    case MyHTML_TAG_MROW:
-    case MyHTML_TAG_MS:
-    case MyHTML_TAG_MSCARRIES:
-    case MyHTML_TAG_MSCARRY:
-    case MyHTML_TAG_MSGROUP:
-    case MyHTML_TAG_MSLINE:
-    case MyHTML_TAG_MSPACE:
-    case MyHTML_TAG_MSQRT:
-    case MyHTML_TAG_MSROW:
-    case MyHTML_TAG_MSTACK:
-    case MyHTML_TAG_MSTYLE:
-    case MyHTML_TAG_MSUB:
-    case MyHTML_TAG_MSUP:
-    case MyHTML_TAG_MSUBSUP:
+    case LXB_TAG_BR:
+    case LXB_TAG_ADDRESS:
+    case LXB_TAG_ANNOTATION_XML:
+    case LXB_TAG_AREA:
+    case LXB_TAG_ARTICLE:
+    case LXB_TAG_ASIDE:
+    case LXB_TAG_AUDIO:
+    case LXB_TAG_BASE:
+    case LXB_TAG_BGSOUND:
+    case LXB_TAG_BLINK:
+    case LXB_TAG_BLOCKQUOTE:
+    case LXB_TAG_BODY:
+    case LXB_TAG_CANVAS:
+    case LXB_TAG_CAPTION:
+    case LXB_TAG_CENTER:
+    case LXB_TAG_COL:
+    case LXB_TAG_COLGROUP:
+    case LXB_TAG_DATALIST:
+    case LXB_TAG_DD:
+    case LXB_TAG_DETAILS:
+    case LXB_TAG_DIALOG:
+    case LXB_TAG_DIR:
+    case LXB_TAG_DIV:
+    case LXB_TAG_DL:
+    case LXB_TAG_DT:
+    case LXB_TAG_EMBED:
+    case LXB_TAG_FIELDSET:
+    case LXB_TAG_FIGCAPTION:
+    case LXB_TAG_FIGURE:
+    case LXB_TAG_FOOTER:
+    case LXB_TAG_FORM:
+    case LXB_TAG_FRAME:
+    case LXB_TAG_FRAMESET:
+    case LXB_TAG_H1:
+    case LXB_TAG_H2:
+    case LXB_TAG_H3:
+    case LXB_TAG_H4:
+    case LXB_TAG_H5:
+    case LXB_TAG_H6:
+    case LXB_TAG_HEAD:
+    case LXB_TAG_HEADER:
+    case LXB_TAG_HGROUP:
+    case LXB_TAG_HR:
+    case LXB_TAG_HTML:
+    case LXB_TAG_IMAGE:
+    case LXB_TAG_ISINDEX:
+    case LXB_TAG_LEGEND:
+    case LXB_TAG_LI:
+    case LXB_TAG_LINK:
+    case LXB_TAG_LISTING:
+    case LXB_TAG_MAIN:
+    case LXB_TAG_MARQUEE:
+    case LXB_TAG_MENU:
+    case LXB_TAG_META:
+    case LXB_TAG_MTEXT:
+    case LXB_TAG_NAV:
+    case LXB_TAG_NOBR:
+    case LXB_TAG_NOEMBED:
+    case LXB_TAG_NOFRAMES:
+    case LXB_TAG_NOSCRIPT:
+    case LXB_TAG_OL:
+    case LXB_TAG_OPTGROUP:
+    case LXB_TAG_OPTION:
+    case LXB_TAG_P:
+    case LXB_TAG_PARAM:
+    case LXB_TAG_PLAINTEXT:
+    case LXB_TAG_PRE:
+    case LXB_TAG_RB:
+    case LXB_TAG_RTC:
+    case LXB_TAG_SECTION:
+    case LXB_TAG_SOURCE:
+    case LXB_TAG_STYLE:
+    case LXB_TAG_SUMMARY:
+    case LXB_TAG_SVG:
+    case LXB_TAG_TABLE:
+    case LXB_TAG_TBODY:
+    case LXB_TAG_TD:
+    case LXB_TAG_TEMPLATE:
+    case LXB_TAG_TFOOT:
+    case LXB_TAG_TH:
+    case LXB_TAG_THEAD:
+    case LXB_TAG_TITLE:
+    case LXB_TAG_TR:
+    case LXB_TAG_TRACK:
+    case LXB_TAG_UL:
+    case LXB_TAG_VIDEO:
+    case LXB_TAG_XMP:
+    case LXB_TAG_ALTGLYPH:
+    case LXB_TAG_ALTGLYPHDEF:
+    case LXB_TAG_ALTGLYPHITEM:
+    case LXB_TAG_ANIMATECOLOR:
+    case LXB_TAG_ANIMATEMOTION:
+    case LXB_TAG_ANIMATETRANSFORM:
+    case LXB_TAG_CLIPPATH:
+    case LXB_TAG_DESC:
+    case LXB_TAG_FEBLEND:
+    case LXB_TAG_FECOLORMATRIX:
+    case LXB_TAG_FECOMPONENTTRANSFER:
+    case LXB_TAG_FECOMPOSITE:
+    case LXB_TAG_FECONVOLVEMATRIX:
+    case LXB_TAG_FEDIFFUSELIGHTING:
+    case LXB_TAG_FEDISPLACEMENTMAP:
+    case LXB_TAG_FEDISTANTLIGHT:
+    case LXB_TAG_FEDROPSHADOW:
+    case LXB_TAG_FEFLOOD:
+    case LXB_TAG_FEFUNCA:
+    case LXB_TAG_FEFUNCB:
+    case LXB_TAG_FEFUNCG:
+    case LXB_TAG_FEFUNCR:
+    case LXB_TAG_FEGAUSSIANBLUR:
+    case LXB_TAG_FEIMAGE:
+    case LXB_TAG_FEMERGE:
+    case LXB_TAG_FEMERGENODE:
+    case LXB_TAG_FEMORPHOLOGY:
+    case LXB_TAG_FEOFFSET:
+    case LXB_TAG_FEPOINTLIGHT:
+    case LXB_TAG_FESPECULARLIGHTING:
+    case LXB_TAG_FESPOTLIGHT:
+    case LXB_TAG_FETILE:
+    case LXB_TAG_FETURBULENCE:
+    case LXB_TAG_FOREIGNOBJECT:
+    case LXB_TAG_GLYPHREF:
+    case LXB_TAG_LINEARGRADIENT:
+    case LXB_TAG_PATH:
+    case LXB_TAG_RADIALGRADIENT:
+    case LXB_TAG_TEXTPATH:
+    case LXB_TAG_MATH:
+    case LXB_TAG_MALIGNMARK:
+    case LXB_TAG_MFENCED:
+    case LXB_TAG_MGLYPH:
+    case LXB_TAG_MI:
+    case LXB_TAG_MN:
+    case LXB_TAG_MO:
+    case LXB_TAG_MS:
         ss << " ";
         break;
     }
@@ -523,25 +458,25 @@ void add_whitespace(myhtml_tag_id_t tag, std::stringstream & ss) {
 struct ToTextVisitor {
     std::stringstream ss;
 
-    bool pre(myhtml_tree_node_t* node) {
-        auto tag = myhtml_node_tag_id(node);
+    bool pre(lxb_dom_node_t* node) {
+        auto tag = lxb_dom_node_tag_id(node);
         switch (tag) {
-        case MyHTML_TAG__END_OF_FILE:
-        case MyHTML_TAG__UNDEF:
+        case LXB_TAG__END_OF_FILE:
+        case LXB_TAG__UNDEF:
              return false;
 
-        case MyHTML_TAG_SCRIPT:
-        case MyHTML_TAG_STYLE:
-        case MyHTML_TAG_TEXTAREA:
-        case MyHTML_TAG_OPTION:
-        case MyHTML_TAG_SELECT:
+        case LXB_TAG_SCRIPT:
+        case LXB_TAG_STYLE:
+        case LXB_TAG_TEXTAREA:
+        case LXB_TAG_OPTION:
+        case LXB_TAG_SELECT:
           ss << " ";
           return false;
 
-        case MyHTML_TAG__TEXT:
-             ss << myhtml_node_text(node, nullptr);
+        case LXB_TAG__TEXT:
+             ss << lxb_dom_node_text_content(node, nullptr);
              return false;
-        case MyHTML_TAG__COMMENT:
+        case LXB_TAG__EM_COMMENT:
              return false;
         default:
             add_whitespace(tag, ss);
@@ -549,13 +484,13 @@ struct ToTextVisitor {
         }
     }
 
-    void post(myhtml_tree_node_t* node) {
-        auto tag = myhtml_node_tag_id(node);
+    void post(lxb_dom_node_t* node) {
+        auto tag = lxb_dom_node_tag_id(node);
         add_whitespace(tag, ss);
     }
 };
 
-std::string html2text(const Context context, myhtml_tree_node_t* root) {
+std::string html2text(const Context context, lxb_dom_node_t* root) {
     ToTextVisitor visitor;
     traverse<MyHtmlAdapter, ToTextVisitor>(visitor, root);
     return visitor.ss.str();
@@ -565,61 +500,65 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     Context* context = (Context*) c;
     JavaCallbackObject cb(env, context->m_callbackClass, JObject(callback));
     const char *input = env->GetStringUTFChars(i, nullptr);
-    size_t inputLength = strlen(input);
+    lxb_status_t status;
+    auto inputLength = strlen(input);
     // init tree
-    myhtml_tree_t* tree = myhtml_tree_create();
-    if (!tree) {
-        std::cerr << "myhtml_tree_create failed" << std::endl;
+    auto document = lxb_html_document_create();
+    if (!document) {
+        std::cerr << "lxb_html_document_create() failed" << std::endl;
+        env->ReleaseStringUTFChars(i, input);
         cb.internalError();
         return;
     }
 
-    auto res = myhtml_tree_init(tree, context->m_myhtml);
-    if (MYHTML_FAILED(res)) {
-        std::cerr << "myhtml_tree_init failed with " << res << std::endl;
-        myhtml_tree_destroy(tree);
+    // TODO how do we know it's UTF8?
+    status = lxb_html_document_parse(document, (const lxb_char_t*) input, inputLength);
+    if (status != LXB_STATUS_OK) {
+        std::cerr << "lxb_html_document_parse() failed" << std::endl;
+        lxb_html_document_destroy(document);
+        env->ReleaseStringUTFChars(i, input);
         cb.internalError();
-        return;
+        return;      
     }
 
-    // parse html
-    myhtml_parse(tree, MyENCODING_UTF_8, input, inputLength);
+    auto tree = lxb_dom_interface_node(document);
 
-    WalkContext wContext {env, context->stringClass, cb, {env}, tree, {}};
+    WalkContext wContext {env, context->stringClass, cb, {env}, {env}, tree, {}};
 
-    transferDoctype(wContext, myhtml_tree_get_document(tree));
-    transferSubTree(wContext, myhtml_tree_get_node_html(tree));
+    transferDoctype(wContext, lxb_dom_interface_document(document));
+    transferSubTree(wContext, tree);
 
     // release resources
-    myhtml_tree_destroy(tree);
+    lxb_html_document_destroy(document);
     env->ReleaseStringUTFChars(i, input);
 }
 
 jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *env, jclass, jlong c, jstring i) {
     Context* context = (Context*) c;
     const char *input = env->GetStringUTFChars(i, nullptr);
+    lxb_status_t status;
     size_t inputLength = strlen(input);
-    // init tree
-    myhtml_tree_t* tree = myhtml_tree_create();
-    if (!tree) {
-        //std::cerr << "myhtml_tree_create failed" << std::endl;
+    // TODO how do we know it's UTF8?
+    auto document = lxb_html_document_create();
+    if (!document) {
+        std::cerr << "lxb_html_document_create() failed" << std::endl;
+        env->ReleaseStringUTFChars(i, input);
         return nullptr;
     }
 
-    auto res = myhtml_tree_init(tree, context->m_myhtml);
-    if (MYHTML_FAILED(res)) {
-        std::cerr << "myhtml_tree_init failed with " << res << std::endl;
-        myhtml_tree_destroy(tree);
-        return nullptr;
+    status = lxb_html_document_parse(document, (const lxb_char_t*) input, inputLength);
+    if (status != LXB_STATUS_OK) {
+        std::cerr << "lxb_html_document_parse() failed" << std::endl;
+        lxb_html_document_destroy(document);
+        env->ReleaseStringUTFChars(i, input);
+        return nullptr; // TODO is this the correct way to handle the error?
     }
 
-    // parse html
-    myhtml_parse(tree, MyENCODING_UTF_8, input, inputLength);
-
-    auto text = html2text(*context, myhtml_tree_get_node_html(tree));
+    auto tree = lxb_dom_interface_node(document);
+    auto text = html2text(*context, tree);
 
     // release resources
-    myhtml_tree_destroy(tree);
+    lxb_html_document_destroy(document);
     env->ReleaseStringUTFChars(i, input);
     return stringToJni(env, text);
 }

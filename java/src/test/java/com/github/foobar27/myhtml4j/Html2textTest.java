@@ -58,6 +58,10 @@ public class Html2textTest {
                 {
                         "<div>Foo\rBar</div>",
                         "Foo Bar"
+                },
+                {
+                        "<!DOCTYPE html><html><body>Foo</body></html>",
+                        "Foo"
                 }});
     }
 
