@@ -526,7 +526,7 @@ void JNICALL Java_com_github_foobar27_myhtml4j_Native_parseUTF8(JNIEnv *env, jcl
     WalkContext wContext {env, context->stringClass, cb, {env}, {env}, tree, {}};
 
     transferDoctype(wContext, lxb_dom_interface_document(document));
-    transferSubTree(wContext, tree);
+    transferSubTree(wContext, (lxb_dom_node*) lxb_dom_document_element(lxb_html_document_original_ref(document)));
 
     // release resources
     lxb_html_document_destroy(document);

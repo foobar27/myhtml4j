@@ -52,6 +52,10 @@ public class ParserTest {
                 {
                         "<!DOCTYPE html><html><body><template><div></div></form></template></body></html>",
                         "Document[Optional[[html, , ]],Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,template,{},[Element[html,div,{},[]]]]]]]]]"
+                },
+                {
+                        "<!DOCTYPE html><!--comment--> <html><body></body></html>",
+                        "Document[Optional[[html, , ]],Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[]]]]]",
                 }
         });
     }
