@@ -19,10 +19,17 @@
 
 std::vector<lxb_dom_node_t*> MyHtmlAdapter::getChildren(lxb_dom_node_t* node) {
     std::vector<lxb_dom_node_t*> children;
-    auto child = node->first_child;
-    while (child) {
-        children.push_back(child);
-        child = child->next;
+    if (node->local_name == LXB_TAG_TEMPLATE) {
+      auto temp = lxb_html_interface_template(node);
+      if (temp->content) {
+	return getChildren(&temp->content->node);
+      }
+    } else {
+        auto child = node->first_child;
+        while (child) {
+	    children.push_back(child);
+	    child = child->next;
+	}
     }
     return children;
 }
