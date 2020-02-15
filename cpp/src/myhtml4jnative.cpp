@@ -162,7 +162,7 @@ struct WalkContext {
     AttributeKeyCache attributeKeyCache;
     NamespaceCache namespaceCache;
     lxb_dom_node_t* tree;
-    std::vector<bool> seenTags;
+    std::unordered_map<lxb_tag_id_t, int32_t> seenTags;
 };
 
 jobjectArray stringArrayToObjectArray(WalkContext & wc, const std::vector<jstring> & strings) {
@@ -276,25 +276,24 @@ struct TransferTreeVisitor {
 	if (tag == LXB_TAG__DOCUMENT) {
 	  return; // skip (was also skipped during pre-stage)
 	}
-        int32_t signed_tag = tag;  // TODO is it possible to exploit this potential overflow?
+        int32_t signed_tag = tag;
         jstring tag_name = nullptr;
 	// The first MAX_TAG_INDEX tag names are predefined, in lexbor as well as in the java counterpart.
 	// If we encounter such a tag, we don't need to send any string.
-	// If we encounter a tag outside of this range, we will send the tag to the java side.
+	// If we encounter a tag outside of this range, we will translate to an incremental tag id,
+	// and send it to the java side. The second time we will skip the string, because the java side
+	// is able to do the lookup itself.
         if (tag > MAX_TAG_INDEX) {
-            auto seenTagIndex = tag - MAX_TAG_INDEX - 1;
-            if (seenTagIndex < wc.seenTags.size()) {
-              if (wc.seenTags[seenTagIndex])  {
-                // already sent, nothing to do. Java side will know how to translate tag id.
-              } else {
-                wc.seenTags[seenTagIndex] = true;
-                tag_name = charArrayToJni(wc.env, (const char*) lxb_dom_element_tag_name(lxb_dom_interface_element(node), nullptr));
-              }
-            } else {
-                wc.seenTags.resize(seenTagIndex + 1, false);
-                wc.seenTags[seenTagIndex] = true;
-                tag_name = charArrayToJni(wc.env, (const char*) lxb_dom_element_tag_name(lxb_dom_interface_element(node), nullptr));
-            }
+	    auto it = wc.seenTags.find(tag);
+	    if (it != wc.seenTags.end()) {
+	      // We have already seen this tag, no need to send the string.
+	      signed_tag = it->second;
+	    } else {
+	      // We haven't seen this tag yet.
+	      signed_tag = wc.seenTags.size() + MAX_TAG_INDEX + 1;
+	      wc.seenTags[tag] = signed_tag;
+	      tag_name = charArrayToJni(wc.env, (const char*) lxb_dom_element_tag_name(lxb_dom_interface_element(node), nullptr));
+	    }
         }
 	auto nsString = lxb_dom_element_prefix(lxb_dom_interface_element(node), nullptr);
 	auto ns = nsString

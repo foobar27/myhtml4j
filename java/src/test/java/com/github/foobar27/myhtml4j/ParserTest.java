@@ -27,6 +27,11 @@ public class ParserTest {
                         "<p id=\"1\" class=\"bold\">foo",
                         "Document[Optional.empty,Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,p,{id=[1], class=[bold]},[Text[foo]]]]]]]]"
                 },
+                // unknown tag
+                {
+                        "<foo>Text1</foo><bar>Text2</bar><foo>Text3</foo>",
+                        "Document[Optional.empty,Element[html,html,{},[Element[html,head,{},[]], Element[html,body,{},[Element[html,foo,{},[Text[Text1]]], Element[html,bar,{},[Text[Text2]]], Element[html,foo,{},[Text[Text3]]]]]]]]"
+                },
                 // unknown namespace
                 {
                         "<html xmlns:tpl=\"http://example.com/\"><body><h1 tpl:bar=\"baz\">World!</h1></body></html>",
