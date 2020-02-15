@@ -546,7 +546,7 @@ jstring JNICALL Java_com_github_foobar27_myhtml4j_Native_html2textUTF8(JNIEnv *e
         return nullptr; // TODO is this the correct way to handle the error?
     }
 
-    auto tree = lxb_dom_interface_node(document)->first_child;
+    auto tree = lxb_dom_interface_node(document);
     auto text = html2text(*context, tree);
 
     // release resources
