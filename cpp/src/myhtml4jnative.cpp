@@ -192,7 +192,9 @@ JniNodeAttributes flatten_attributes(WalkContext & wc, lxb_dom_node_t* root) {
       //        auto aNs = lxb_dom_attr_prefix(attr, nullptr);
       int32_t aNs = 0; // TODO
       //std::cerr << "qualified name: " << lxb_dom_attr_qualified_name(attr, nullptr) << std::endl;
-        auto aKey = wc.attributeKeyCache.get((const char*) lxb_dom_attr_local_name(attr, nullptr));
+        size_t aKeyLength {};
+        auto aKeyPtr = (const char*) lxb_dom_attr_local_name(attr, &aKeyLength);
+        auto aKey = wc.attributeKeyCache.get(aKeyPtr, aKeyLength);
         auto aValue = charArrayToJni(wc.env, (const char*) lxb_dom_attr_value(attr, nullptr));
 
         ids.push_back(aNs);
@@ -295,10 +297,11 @@ struct TransferTreeVisitor {
 	      tag_name = charArrayToJni(wc.env, (const char*) lxb_dom_element_tag_name(lxb_dom_interface_element(node), nullptr));
 	    }
         }
-	auto nsString = lxb_dom_element_prefix(lxb_dom_interface_element(node), nullptr);
-	auto ns = nsString
-	  ? wc.namespaceCache.get((const char*) nsString)
-	  : wc.namespaceCache.get("html"); // TODO optimize // TODO is this even correct?
+	size_t nsLength {};
+	auto nsPtr = (const char*) lxb_dom_element_prefix(lxb_dom_interface_element(node), &nsLength);
+	auto ns = nsPtr
+	  ? wc.namespaceCache.get(nsPtr, nsLength)
+	  : wc.namespaceCache.get("html", 4); // TODO is this even correct? or should it be inherited?
         auto attributes = flatten_attributes(wc, node);
         wc.cb.createElement(ns, {signed_tag, tag_name}, attributes.ids, attributes.strings);
     }

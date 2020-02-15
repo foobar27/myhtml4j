@@ -21,17 +21,16 @@
 #include <unordered_map>
 
 template<typename K, typename L>
-K baseGet(BaseCache & cache, const char* c_name) {
+K baseGet(BaseCache & cache, const char* c_name, size_t nameLength) {
   using namespace std;
   if (!c_name) {
     c_name = "";
   }
-  auto length = strlen(c_name);
-  auto lookup = L::in_word_set(c_name, length);
+  auto lookup = L::in_word_set(c_name, nameLength);
   if (lookup) {
     return {lookup->id, nullptr};
   } else {
-    string name {c_name, length};
+    string name {c_name, nameLength};
     auto name_it = cache.m_cache.find(name);
     if (name_it != cache.m_cache.end()) {
       return {-1, name_it->second};

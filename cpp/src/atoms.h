@@ -41,7 +41,7 @@ struct AttributeKeyCache : private BaseCache {
     : BaseCache(env)
   {}
   
-  AttributeKey get(const char* name);
+  AttributeKey get(const char* name, size_t nameLength);
 };
 
 struct Namespace {
@@ -54,5 +54,5 @@ struct NamespaceCache : private BaseCache {
     : BaseCache(env)
   {}
   
-  Namespace get(const char* name);
+  Namespace get(const char* name, size_t nameLength);
 };

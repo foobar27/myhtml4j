@@ -5,7 +5,7 @@
 #include "attribute_keys.h"
 #pragma GCC diagnostic pop
 
-AttributeKey AttributeKeyCache::get(const char* c_name) {
-  return baseGet<AttributeKey, AttributeKeyLookup>(*this, c_name);
+AttributeKey AttributeKeyCache::get(const char* c_name, size_t nameLength) {
+  return baseGet<AttributeKey, AttributeKeyLookup>(*this, c_name, nameLength);
 }
 
