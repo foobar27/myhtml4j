@@ -35,7 +35,7 @@
 #include "traverser.h"
 #include "adapter.h"
 
-#define MAX_TAG_INDEX 251 // TODO magic value, where can we get it from?
+#define MAX_TAG_INDEX 194 // see const.h
 
 struct IdJString {
 
