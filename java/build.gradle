@@ -97,7 +97,7 @@ uploadArchives {
                 url 'https://github.com/foobar27/myhtml4j'
                 description 'JNI wrapper around the myhtml html5 parser'
                 packaging 'jar'
-                url 'https://github.com/foobar27/nativeinitializer'
+                url 'https://github.com/foobar27/myhtml4j'
 
                 scm {
                     connection 'scm:git:git://github.com/foobar27/myhtml4j.git'
